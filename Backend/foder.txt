@@ -1,0 +1,87 @@
+📦 Frontend/
+├── 📁 assets/
+│   └── 🖼️ default-profile.png
+│
+├── 📁 components/
+│   └── 📄 CustomDropdown.js
+│   └── 📄 VenueCard.js
+│
+├── 📁 context/
+│   └── 📄 AuthContext.js
+|    └── 📄 VenueContext.js
+│
+├── 📁 navigation/
+│   └── 📄 AppNavigation.js
+│   └── 📄 BottomTabs.js
+│   └── 📄 VendorStack.js
+│
+├── 📁 screens/
+│   ├── 📁 vendor/
+│   │   │  	└── 📄 BookNowScreen.js
+│   │   └── 📄 BookNowScreen.js
+│   │   └── 📄 BookScreen.js
+│   │   └── 📄 ChangePasswordScreen.js
+│   │   └── 📄 HomeScreen.js
+│   │   └── 📄 MapScreen.js
+│   │   └── 📄 PaymentScreen.js
+│   │   └── 📄 ProfileScreen.js
+│   │   └── 📄 ReviewScreen.js
+│   │   └── 📄 SearchScreen.js
+│   │   └── 📄 SignInScreen.js
+│   │   └── 📄 SignUpScreen.js
+│   │   └── 📄 UpdateProfileScreen.js
+│   │   └── 📄 VenueInfoScreen.js
+│   │
+├── 📁 utils/
+│   │   └── 📄 axiosInstance.js
+├── 📄 App.js
+├── 📄 package.json
+└── 📄 .env
+
+
+
+
+
+
+
+📦 Backend/
+├── 📁 config/
+│   └── 📄 db.js                  
+│
+├── 📁 controllers/
+│   └── 📄 booking.controller.js    
+│   └── 📄 payment.controller.js  
+│   └── 📄 review.controller.js   
+│   └── 📄 user.controller.js  
+│   └── 📄 venue.controller.js  
+│
+├── 📁 middlewares/
+│   └── 📄 auth.middleware.js      // Protect routes, extract req.user
+│   └── 📄 multer.middleware.js     // Global error handling
+│
+├── 📁 models/
+│   └── 📄 booking.model.js             
+│   └── 📄 payment.model.js             
+│   └── 📄 review.model.js           
+│   └── 📄 user.model.js    
+│   └── 📄 venue.model.js                
+│
+├── 📁 public/
+│   ├── 📁 uploads/
+│   │   │  	└── 📁 venues.js
+│  
+├── 📁 routes/
+│   └── 📄 booking.routes.js        
+│   └── 📄 payment.routes.js         
+│   └── 📄 review.routes.js      
+│   └── 📄 user.routes.js     
+│   └── 📄 venue.outes.js      
+│
+├── 📁 utils/
+│   └── 📄 ApiError.js      
+│   └── 📄 asyncHandler.js           
+│
+├── 📄 .env
+├── 📄 app.js                
+├── 📄 package.json
+

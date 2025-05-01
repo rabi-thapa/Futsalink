@@ -1,0 +1,63 @@
+# Ignore node_modules in Backend
+Backend/node_modules/
+
+# OSX
+Frontend/.DS_Store
+
+# Xcode
+Frontend/build/
+Frontend/*.pbxuser
+Frontend/*.mode1v3
+Frontend/*.mode2v3
+Frontend/*.perspectivev3
+Frontend/xcuserdata
+Frontend/*.xccheckout
+Frontend/*.moved-aside
+Frontend/DerivedData
+Frontend/*.hmap
+Frontend/*.ipa
+Frontend/*.xcuserstate
+Frontend/**/.xcode.env.local
+
+# Android/IntelliJ
+Frontend/build/
+Frontend/.idea
+Frontend/.gradle
+Frontend/local.properties
+Frontend/*.iml
+Frontend/*.hprof
+Frontend/.cxx/
+Frontend/*.keystore
+Frontend/.kotlin/
+
+# node.js
+Frontend/node_modules/
+Frontend/npm-debug.log
+Frontend/yarn-error.log
+
+# fastlane
+Frontend/**/fastlane/report.xml
+Frontend/**/fastlane/Preview.html
+Frontend/**/fastlane/screenshots
+Frontend/**/fastlane/test_output
+
+# Bundle artifact
+Frontend/*.jsbundle
+
+# Ruby / CocoaPods
+Frontend/**/Pods/
+Frontend/vendor/bundle/
+
+# Temporary files created by Metro to check the health of the file watcher
+Frontend/.metro-health-check*
+
+# testing
+Frontend/coverage
+
+# Yarn
+Frontend/.yarn/*
+!Frontend/.yarn/patches
+!Frontend/.yarn/plugins
+!Frontend/.yarn/releases
+!Frontend/.yarn/sdks
+!Frontend/.yarn/versions
