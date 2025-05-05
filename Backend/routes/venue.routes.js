@@ -14,6 +14,12 @@ const {
     getVendorVenues,
     addReview,
     getVenueWithReviews,
+
+    addDiscount,
+    updateDiscount,
+    deleteDiscount,
+    listDiscounts
+
 } = require("../controllers/venue.controller");
 
 
@@ -28,7 +34,10 @@ router.delete("/deleteVenue/:venueId" , verifyToken, deleteVenue);
 router.post('/:venueId/review', verifyToken, addReview);
 router.get('/:id', getVenueWithReviews);
 
-
+router.post("/venues/:venueId/discounts", verifyToken, addDiscount);
+router.put("/venues/:venueId/discounts/:discountId", verifyToken, updateDiscount);
+router.delete("/venues/:venueId/discounts/:discountId", verifyToken, deleteDiscount);
+router.get("/venues/:venueId/discounts", verifyToken, listDiscounts);
 module.exports = router;
 
 

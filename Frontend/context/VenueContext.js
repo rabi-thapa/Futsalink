@@ -10,32 +10,65 @@ export const VenueProvider = ({children}) => {
   const [loading, setLoading] = useState(true);
 
   // Fetch venue details by ID
-  const fetchVenueById = async venueId => {
+  // const fetchVenueById = async venueId => {
+  //   setLoading(true);
+  //   try {
+  //     const token = await AsyncStorage.getItem('accessToken');
+  //     if (!token) throw new Error('User not authenticated');
+
+  //     const response = await fetch(
+  //       `http://10.0.2.2:3000/api/venue/currentVenue/${venueId}`,
+  //       {
+  //         method: 'GET',
+  //         headers: {Authorization: `Bearer ${token}`},
+  //       },
+  //     );
+
+  //     const data = await response.json();
+
+  //     console.log("fetchVenueById", data);
+
+     
+
+  //     if (!response.ok)
+  //       throw new Error(data.message || 'Failed to fetch venue');
+
+    
+
+  //     setSelectedVenue(data.venue);
+  //   } catch (error) {
+  //     console.error('Error fetching venue:', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+  const fetchVenueById = async (venueId) => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) throw new Error('User not authenticated');
-
-      const response = await fetch(
-        `http://10.0.2.2:3000/api/venue/currentVenue/${venueId}`,
-        {
-          method: 'GET',
-          headers: {Authorization: `Bearer ${token}`},
-        },
-      );
-
+  
+      const response = await fetch(`http://10.0.2.2:3000/api/venue/currentVenue/${venueId}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
       const data = await response.json();
-
-     
-
-      if (!response.ok)
+  
+      if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch venue');
-
-    
-
+      }
+  
+      // Log the fetched venue data for debugging
+      console.log('Fetched Venue Data:', data.venue);
+  
+      // Update the selectedVenue state
       setSelectedVenue(data.venue);
     } catch (error) {
       console.error('Error fetching venue:', error);
+      alert(error.message || 'Failed to load venue details');
     } finally {
       setLoading(false);
     }

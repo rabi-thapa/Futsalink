@@ -17,6 +17,8 @@ import UserProfileDetails from '../screen/UserProfileDetails';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import UpdateVenueScreen from '../screen/vendor/UpdateVenueScreen';
+
+import DiscountManagementScreen from '../screen/vendor/DiscountManagementScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -54,7 +56,6 @@ export default function VendorTabs() {
         }}
       />
 
-
       <Tab.Screen
         name="ORDERS"
         component={OrdersScreen}
@@ -71,7 +72,6 @@ export default function VendorTabs() {
         }}
       />
 
-      
       <Tab.Screen
         name="PROFILE"
         component={ProfileScreen}
@@ -104,6 +104,12 @@ export function VendorStack() {
       <Stack.Screen
         name="Main"
         component={BottomTabs}
+        options={{headerShown: false}}
+      />
+
+      <Stack.Screen
+        name="DiscountManagementScreen"
+        component={DiscountManagementScreen}
         options={{headerShown: false}}
       />
 

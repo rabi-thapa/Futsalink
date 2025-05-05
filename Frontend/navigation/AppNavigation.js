@@ -14,8 +14,6 @@ import PaymentScreen from '../screen/PaymentScreen';
 import ReviewScreen from '../screen/ReviewScreen';
 import MapScreen from '../screen/MapScreen';
 
-import KhaltiCheckoutScreen from '../screen/KhaltiCheckoutScreen';
-
 import BookingSuccessScreen from '../screen/BookingSuccessScreen';
 
 import {VendorStack} from './VendorStack';
@@ -93,14 +91,6 @@ function MainStack() {
       <Stack.Screen name="BookNow" component={BookNowScreen} />
 
       <Stack.Screen
-        name="KhaltiCheckoutScreen"
-        component={KhaltiCheckoutScreen}
-        options={{
-          title: 'Checkout',
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
         name="BookingSuccessScreen"
         component={BookingSuccessScreen}
         options={{
@@ -146,36 +136,13 @@ const NavigationWrapper = () => {
 };
 
 const AppNavigation = () => {
-  // const { userRole, loading } = useContext(AuthContext);
-
-  // if (loading) {
-  //   return (
-  //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-  //       <ActivityIndicator size="large" color="green" />
-  //     </View>
-  //   );
-  // }
-
   return (
-    //   <NavigationContainer>
-    //      <AuthProvider>
-    //       <VenueProvider>
-
-    //       {userRole === 'vendor' ? <VendorStack/> : <MainStack />}
-
-    //     </VenueProvider>
-    //     </AuthProvider>
-    //  </NavigationContainer>
-
-    // return (
     <AuthProvider>
       <VenueProvider>
         <NavigationWrapper />
       </VenueProvider>
     </AuthProvider>
   );
-
-  // );
 };
 
 export default AppNavigation;

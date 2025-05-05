@@ -5,42 +5,65 @@ const asyncHandler = require("../utils/asyncHandler");
 const Review= require("../models/review.model");
 
 
+const calculateDiscountedPrice = (price, discount) => {
+  if (!discount || !discount.discountPercentage) return null;
+  const currentDate = new Date();
+  if (
+    currentDate >= new Date(discount.validFrom) &&
+    currentDate <= new Date(discount.validUntil)
+  ) {
+    const discountedPrice = price - (price * discount.discountPercentage) / 100;
+    return discountedPrice.toFixed(2); // Round to 2 decimal places
+  }
+  return null;
+};
+
 // const getVenueById = asyncHandler(async (req, res) => {
-//     try {
+//   try {
+//     const venueId = req.params.venueId;
 
-//         const venueId = req.params.venueId;
+    
+//     const venue = await Venue.findById(venueId)
+//       .populate({
+//         path: 'reviews',
+//         select: 'rating', 
+//       })
+//       .exec();
 
-//         // console.log("Fetching venue: ", venueId);
-
-//         const venue = await Venue.findById(venueId);
-//         if (!venue) {
-//             return res.status(404).json({ message: "Venue not found" });
-//         }
-
-//         return res.status(200).json({
-//             success: true,
-//             message: "Venue fetched successfully",
-//             venue,
-//         });
-//     } catch (error) {
-//         console.error("Error fetching venue:", error);
-//         return res.status(500).json({ message: "Internal Server Error" });
+//     if (!venue) {
+//       return res.status(404).json({ message: "Venue not found" });
 //     }
+
+//     // Calculate the average rating
+//     const reviews = venue.reviews;
+//     const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
+//     const averageRating = reviews.length > 0 ? (totalRatings / reviews.length).toFixed(1) : null;
+
+    
+//     return res.status(200).json({
+//       success: true,
+//       message: "Venue fetched successfully",
+//       venue: {
+//         ...venue.toObject(),
+//         averageRating: averageRating || 'N/A', 
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching venue:", error);
+//     return res.status(500).json({ message: "Internal Server Error" });
+//   }
 // });
 
 
 const getVenueById = asyncHandler(async (req, res) => {
   try {
     const venueId = req.params.venueId;
-
-    // Fetch the venue with its reviews populated
     const venue = await Venue.findById(venueId)
       .populate({
         path: 'reviews',
-        select: 'rating', // Only fetch the rating field from reviews
+        select: 'rating',
       })
       .exec();
-
     if (!venue) {
       return res.status(404).json({ message: "Venue not found" });
     }
@@ -50,13 +73,27 @@ const getVenueById = asyncHandler(async (req, res) => {
     const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
     const averageRating = reviews.length > 0 ? (totalRatings / reviews.length).toFixed(1) : null;
 
-    // Add the average rating to the response
+    // Calculate discounted price if a valid discount exists
+    let discountedPrice = null;
+    if (venue.discount) {
+      const { discountPercentage, validFrom, validUntil } = venue.discount;
+      const currentDate = new Date();
+      if (
+        currentDate >= new Date(validFrom) &&
+        currentDate <= new Date(validUntil)
+      ) {
+        discountedPrice = venue.pricePerHour - (venue.pricePerHour * discountPercentage) / 100;
+        discountedPrice = parseFloat(discountedPrice.toFixed(2)); // Round to 2 decimal places
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: "Venue fetched successfully",
       venue: {
         ...venue.toObject(),
-        averageRating: averageRating || 'N/A', // Include average rating in the response
+        averageRating: averageRating || 'N/A',
+        discountedPrice: discountedPrice || null, 
       },
     });
   } catch (error) {
@@ -102,12 +139,54 @@ const getVendorVenues = asyncHandler(async (req, res) => {
     }
 });
 
+
+
+
+// const getAllVenues = asyncHandler(async (req, res) => {
+//   try {
+//     const { page = 1, limit = 10, location, search = '', sortBy = 'location', sortOrder = 'asc' } = req.query;
+//     const pageNumber = parseInt(page, 10);
+//     const limitNumber = parseInt(limit, 10);
+
+//     const query = {};
+//     if (location && location.trim()) {
+//       query['location.locationName'] = { $regex: new RegExp(location, 'i') };
+//     }
+//     if (search && search.trim()) {
+//       query.venueName = { $regex: new RegExp(search, 'i') };
+//     }
+
+//     let sortCriteria = {};
+//     const order = sortOrder === 'desc' ? -1 : 1;
+//     if (sortBy === 'venueName') sortCriteria.venueName = order;
+//     else if (sortBy === 'price') sortCriteria.pricePerHour = order;
+//     else sortCriteria['location.locationName'] = order;
+
+//     const venues = await Venue.find(query)
+//       .sort(sortCriteria)
+//       .skip((pageNumber - 1) * limitNumber)
+//       .limit(limitNumber);
+
+//     const totalVenues = await Venue.countDocuments(query);
+//     return res.status(200).json({
+//       message: 'All venues retrieved successfully',
+//       totalVenues,
+//       totalPages: Math.ceil(totalVenues / limitNumber),
+//       currentPage: pageNumber,
+//       venues,
+//     });
+//   } catch (error) {
+//     console.error('Fetching All Venues Error:', error);
+//     return res.status(500).json({ message: 'Internal Server Error' });
+//   }
+// });
+  
+
 const getAllVenues = asyncHandler(async (req, res) => {
   try {
     const { page = 1, limit = 10, location, search = '', sortBy = 'location', sortOrder = 'asc' } = req.query;
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
-
     const query = {};
     if (location && location.trim()) {
       query['location.locationName'] = { $regex: new RegExp(location, 'i') };
@@ -115,7 +194,6 @@ const getAllVenues = asyncHandler(async (req, res) => {
     if (search && search.trim()) {
       query.venueName = { $regex: new RegExp(search, 'i') };
     }
-
     let sortCriteria = {};
     const order = sortOrder === 'desc' ? -1 : 1;
     if (sortBy === 'venueName') sortCriteria.venueName = order;
@@ -127,20 +205,31 @@ const getAllVenues = asyncHandler(async (req, res) => {
       .skip((pageNumber - 1) * limitNumber)
       .limit(limitNumber);
 
+    // Add discounted price to each venue
+    const venuesWithDiscounts = venues.map((venue) => {
+      const discountedPrice = calculateDiscountedPrice(
+        venue.pricePerHour,
+        venue.discount
+      );
+      return {
+        ...venue.toObject(),
+        discountedPrice: discountedPrice || null,
+      };
+    });
+
     const totalVenues = await Venue.countDocuments(query);
     return res.status(200).json({
       message: 'All venues retrieved successfully',
       totalVenues,
       totalPages: Math.ceil(totalVenues / limitNumber),
       currentPage: pageNumber,
-      venues,
+      venues: venuesWithDiscounts,
     });
   } catch (error) {
     console.error('Fetching All Venues Error:', error);
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 });
-  
 
 
 
@@ -359,6 +448,140 @@ const getVenueWithReviews = asyncHandler(async (req, res) => {
 
 
 
+const addDiscount = asyncHandler(async (req, res) => {
+  try {
+    const { venueId } = req.params;
+    const { discountPercentage, validFrom, validUntil, description } = req.body;
+
+    // Validate input
+    if (!discountPercentage || !validFrom || !validUntil) {
+      throw new ApiError(400, "All fields (discountPercentage, validFrom, validUntil) are required.");
+    }
+
+    // Find the venue
+    const venue = await Venue.findById(venueId);
+    if (!venue) {
+      throw new ApiError(404, "Venue not found.");
+    }
+
+    // Update or create the discount
+    venue.discount = {
+      discountPercentage,
+      validFrom,
+      validUntil,
+      description,
+    };
+
+    // Save the updated venue
+    await venue.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Discount added/updated successfully.",
+      venue,
+    });
+  } catch (error) {
+    console.error("Error adding/updating discount:", error);
+    return res.status(error.statusCode || 500).json({ message: error.message });
+  }
+});
+
+
+const updateDiscount = asyncHandler(async (req, res) => {
+  try {
+      const { venueId, discountId } = req.params; // Extract venue ID and discount ID from URL params
+      const { discountPercentage, validFrom, validUntil, description } = req.body;
+
+      // Find the venue
+      const venue = await Venue.findById(venueId);
+      if (!venue) {
+          throw new ApiError(404, "Venue not found.");
+      }
+
+      // Find the specific discount in the venue's discounts array
+      const discountIndex = venue.discounts.findIndex(
+          (discount) => discount._id.toString() === discountId
+      );
+      if (discountIndex === -1) {
+          throw new ApiError(404, "Discount not found.");
+      }
+
+      // Update the discount
+      venue.discounts[discountIndex] = {
+          ...venue.discounts[discountIndex].toObject(),
+          discountPercentage: discountPercentage || venue.discounts[discountIndex].discountPercentage,
+          validFrom: validFrom || venue.discounts[discountIndex].validFrom,
+          validUntil: validUntil || venue.discounts[discountIndex].validUntil,
+          description: description || venue.discounts[discountIndex].description,
+      };
+
+      // Save the updated venue
+      await venue.save();
+
+      return res.status(200).json({
+          success: true,
+          message: "Discount updated successfully.",
+          venue,
+      });
+  } catch (error) {
+      console.error("Error updating discount:", error);
+      return res.status(error.statusCode || 500).json({ message: error.message });
+  }
+});
+
+
+
+const deleteDiscount = asyncHandler(async (req, res) => {
+  try {
+    const { venueId } = req.params;
+
+    // Find the venue
+    const venue = await Venue.findById(venueId);
+    if (!venue) {
+      throw new ApiError(404, "Venue not found.");
+    }
+
+    // Remove the discount
+    venue.discount = null;
+
+    // Save the updated venue
+    await venue.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Discount deleted successfully.",
+      venue,
+    });
+  } catch (error) {
+    console.error("Error deleting discount:", error);
+    return res.status(error.statusCode || 500).json({ message: error.message });
+  }
+});
+
+
+const listDiscounts = asyncHandler(async (req, res) => {
+  try {
+    const { venueId } = req.params;
+
+    // Find the venue
+    const venue = await Venue.findById(venueId).select("discount");
+    if (!venue) {
+      throw new ApiError(404, "Venue not found.");
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Discount retrieved successfully.",
+      discount: venue.discount || null,
+    });
+  } catch (error) {
+    console.error("Error listing discount:", error);
+    return res.status(error.statusCode || 500).json({ message: error.message });
+  }
+});
+
+
+
 module.exports = {
     getVenueById,
     getVendorVenues,
@@ -369,5 +592,11 @@ module.exports = {
     deleteVenue,
     addReview,
     getVendorVenues,
-    getVenueWithReviews
+    getVenueWithReviews,
+
+
+    addDiscount,
+    updateDiscount,
+    deleteDiscount,
+    listDiscounts,
 };

@@ -19,55 +19,49 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
 const BookNowScreen = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null); // Single dropdown for time slots
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [openTimeSlot, setOpenTimeSlot] = useState(false);
-  const [timeSlots, setTimeSlots] = useState([]); // Available time slots
+  const [timeSlots, setTimeSlots] = useState([]);
   const route = useRoute();
   const navigation = useNavigation();
-  const {venueId} = route.params || {};
-  const {
-    selectedVenue,
-    fetchVenueById,
-    loading: venueLoading,
-  } = useContext(VenueContext);
+  const { venueId } = route.params || {};
+  const { selectedVenue, fetchVenueById, loading: venueLoading } = useContext(VenueContext);
 
   useEffect(() => {
+    console.log('Venue ID:', venueId); // Debugging line
     if (venueId) {
       fetchVenueById(venueId);
     }
   }, [venueId]);
 
-  // Generate dynamic time slots based on venue's opening and closing hours
   useEffect(() => {
     const fetchAvailableSlots = async () => {
       if (!selectedVenue?.openingHours || !selectedDate) return;
-      const {open, close} = selectedVenue.openingHours;
+      const { open, close } = selectedVenue.openingHours;
       if (!open || !close) {
-        console.error(
-          'Invalid opening or closing hours:',
-          selectedVenue.openingHours,
-        );
+        console.error('Invalid opening or closing hours:', selectedVenue.openingHours);
         return;
       }
-      // Generate all possible time slots
+
       const startTime = new Date(`1970-01-01T${open}:00`);
       const endTime = new Date(`1970-01-01T${close}:00`);
       const allSlots = [];
       let currentTime = new Date(startTime);
       while (currentTime < endTime) {
-        const startFormatted = currentTime.toTimeString().slice(0, 5); // Format as HH:mm
+        const startFormatted = currentTime.toTimeString().slice(0, 5); 
         currentTime.setHours(currentTime.getHours() + 1);
-        const endFormatted = currentTime.toTimeString().slice(0, 5); // Format as HH:mm
+        const endFormatted = currentTime.toTimeString().slice(0, 5); 
         allSlots.push({
           label: `${startFormatted} - ${endFormatted}`,
           value: `${startFormatted}-${endFormatted}`,
         });
       }
-      // Fetch booked slots for the selected date and venue
+
       try {
         const token = await AsyncStorage.getItem('accessToken');
         if (!token) throw new Error('User not authenticated');
@@ -81,14 +75,13 @@ const BookNowScreen = () => {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
-          },
+          }
         );
         const bookedSlotsData = await response.json();
-        // Filter out booked slots
         const availableSlots = allSlots.filter(slot => {
           const [start, end] = slot.value.split('-');
           return !bookedSlotsData.bookedSlots.some(
-            booking => booking.startTime === start && booking.endTime === end,
+            booking => booking.startTime === start && booking.endTime === end
           );
         });
         setTimeSlots(availableSlots);
@@ -100,26 +93,14 @@ const BookNowScreen = () => {
     fetchAvailableSlots();
   }, [selectedVenue, selectedDate]);
 
-  // Show date picker
-  const showDatePicker = () => {
-    setDatePickerVisibility(true);
-  };
-
-  // Hide date picker
-  const hideDatePicker = () => {
-    setDatePickerVisibility(false);
-  };
-
-  // Handle date selection
+  const showDatePicker = () => setDatePickerVisibility(true);
+  const hideDatePicker = () => setDatePickerVisibility(false);
   const handleConfirm = date => {
     setSelectedDate(date);
     hideDatePicker();
   };
 
-  // Format date for display
-  const formatDate = date => {
-    return date.toDateString();
-  };
+  const formatDate = date => date.toDateString();
 
   const handleContinueBooking = async () => {
     if (!selectedVenue) {
@@ -127,17 +108,19 @@ const BookNowScreen = () => {
       alert('Venue data is missing. Please try again.');
       return;
     }
+  
     if (!selectedTimeSlot) {
       alert('Please select a time slot.');
       return;
     }
+  
     const [startTime, endTime] = selectedTimeSlot.split('-');
     setLoading(true);
+  
     try {
       const token = await AsyncStorage.getItem('accessToken');
-      if (!token) {
-        throw new Error('User not authenticated');
-      }
+      if (!token) throw new Error('User not authenticated');
+  
       const bookingRes = await fetch('http://10.0.2.2:3000/api/bookings/', {
         method: 'POST',
         headers: {
@@ -145,24 +128,20 @@ const BookNowScreen = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          venue: selectedVenue._id,
+          venue: selectedVenue._id, // Send the venue ID here
           date: selectedDate.toISOString().split('T')[0],
           startTime,
           endTime,
         }),
       });
+  
       const bookingData = await bookingRes.json();
-      console.log('Booking Data:', bookingData);
-      if (!bookingData._id) {
+      console.log('Booking Response:', bookingData);
+  
+      if (!bookingRes.ok) {
         throw new Error(bookingData.message || 'Booking creation failed');
       }
-      if (
-        bookingData.message ===
-        'Booking not available for this time slot. Please choose another time.'
-      ) {
-        alert(bookingData.message);
-        return;
-      }
+  
       navigation.navigate('PaymentScreen', {
         venue: selectedVenue,
         date: selectedDate.toISOString().split('T')[0],
@@ -171,7 +150,7 @@ const BookNowScreen = () => {
         bookingId: bookingData._id,
       });
     } catch (error) {
-      console.error(error);
+      console.error('Error creating booking:', error);
       alert(error.message || 'Booking initiation failed');
     } finally {
       setLoading(false);
@@ -187,15 +166,13 @@ const BookNowScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollView}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoidingView}>
+          style={styles.keyboardAvoidingView}
+        >
           <View style={styles.pressable}>
-            {/* Venue Image */}
             <Image
-              source={{uri: `http://10.0.2.2:3000/${selectedVenue.venueImage}`}}
+              source={{ uri: `http://10.0.2.2:3000/${selectedVenue.venueImage}` }}
               style={styles.image}
             />
-
-            {/* Venue Details */}
             <View style={styles.header}>
               <View style={styles.title}>
                 <View>
@@ -204,8 +181,7 @@ const BookNowScreen = () => {
                     {selectedVenue.location?.locationName || 'Unknown Location'}
                   </Text>
                 </View>
-
-                {/* Rating */}
+              
                 <View style={styles.ratingContainer}>
                   <MaterialCommunityIcons name="star" size={24} color="gold" />
                   <Text style={styles.ratingText}>
@@ -213,8 +189,7 @@ const BookNowScreen = () => {
                   </Text>
                 </View>
               </View>
-
-              {/* Description */}
+              
               <View>
                 <Text style={styles.description}>
                   {selectedVenue.description || 'No description available'}
@@ -222,20 +197,26 @@ const BookNowScreen = () => {
               </View>
             </View>
 
-            {/* Price */}
+           
             <View style={styles.priceContainer}>
-              <Text style={styles.priceLabel}>Price:</Text>
+             
+              {selectedVenue.discountedPrice && (
+                <Text style={styles.originalPrice}>
+                  NPR {selectedVenue.pricePerHour}/hour
+                </Text>
+              )}
+             
               <Text style={styles.priceValue}>
-                NPR {selectedVenue.pricePerHour || 'N/A'} / hour
+                {selectedVenue.discountedPrice
+                  ? `NPR ${selectedVenue.discountedPrice}/hour`
+                  : `NPR ${selectedVenue.pricePerHour}/hour`}
               </Text>
             </View>
 
-            {/* Date Picker */}
+            
             <View style={styles.detailsContainer}>
               <Text style={styles.detailDateAndTime}>Date:</Text>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={showDatePicker}>
+              <TouchableOpacity style={styles.dateButton} onPress={showDatePicker}>
                 <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
               </TouchableOpacity>
               <DateTimePickerModal
@@ -247,7 +228,7 @@ const BookNowScreen = () => {
               />
             </View>
 
-            {/* Time Slot Picker */}
+           
             <View style={styles.pickerContainer}>
               <Text style={styles.pickerLabel}>Select Time Slot:</Text>
               <DropDownPicker
@@ -267,11 +248,7 @@ const BookNowScreen = () => {
                 listEmptyLabel="No available time slots"
               />
             </View>
-
-            {/* Book Now Button */}
-            <Pressable
-              style={styles.bookButton}
-              onPress={handleContinueBooking}>
+            <Pressable style={styles.bookButton} onPress={handleContinueBooking}>
               <Text style={styles.bookButtonText}>Book Now</Text>
             </Pressable>
           </View>
@@ -283,7 +260,6 @@ const BookNowScreen = () => {
 
 export default BookNowScreen;
 
-// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -342,20 +318,22 @@ const styles = StyleSheet.create({
     color: 'gold',
   },
   priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     marginHorizontal: 12,
     marginTop: 10,
   },
-  priceLabel: {
+  originalPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginRight: 5,
+    color: 'black',
+    textDecorationLine: 'line-through', 
+    textDecorationColor: 'red', 
   },
   priceValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'green',
+    color: 'green', 
   },
   detailsContainer: {
     marginTop: 16,
@@ -417,3 +395,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+

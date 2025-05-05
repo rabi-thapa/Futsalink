@@ -30,6 +30,8 @@ const HomeScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
+
+      
       {/* <View style={styles.findGroundContainer}>
         <Image
           style={styles.iconImage}
@@ -107,7 +109,10 @@ const HomeScreen = () => {
         </Pressable>
       </View>
 
-      <View style={styles.spotlightContainer}>
+     
+
+
+<View style={styles.spotlightContainer}>
         <Text style={styles.spotlightTitle}>Spotlight</Text>
         {loading ? (
           <ActivityIndicator size="large" color="green" />
@@ -115,31 +120,36 @@ const HomeScreen = () => {
           <Text>No venues available</Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {venues.map(venue => (
+            {venues.map((venue) => (
               <Pressable
                 key={`${venue._id}-${venue.venueName}`}
                 onPress={() =>
-                  navigation.navigate('BookNow', {venueId: venue._id})
-                }>
+                  navigation.navigate('BookNow', { venueId: venue._id })
+                }
+              >
                 <ImageBackground
                   imageStyle={styles.spotlightImage}
                   style={styles.spotlightItem}
-                  source={{uri: `http://10.0.2.2:3000/${venue.venueImage}`}}
-                  onError={error =>
+                  source={{ uri: `http://10.0.2.2:3000/${venue.venueImage}` }}
+                  onError={(error) =>
                     console.error('Image loading error:', error.nativeEvent)
-                  }>
-                  <View style={styles.spotlightOverlay}>
-                    <Text style={styles.spotlightArenaName}>
-                      {venue.venueName}
-                    </Text>
-                    {/* Corrected location rendering */}
-                    <Text style={styles.spotlightLocation}>
-                      {venue.location?.locationName || 'Unknown Location'}
-                    </Text>
-                    <Text style={styles.spotlightPrice}>
-                      Rs {venue.pricePerHour}/hour
-                    </Text>
-                  </View>
+                  }
+                ><View style={styles.spotlightOverlay}>
+                <Text style={styles.spotlightArenaName}>{venue.venueName}</Text>
+                <Text style={styles.spotlightLocation}>
+                  {venue.location?.locationName || 'Unknown Location'}
+                </Text>
+                <Text style={styles.spotlightPrice}>
+                  {venue.discountedPrice ? (
+                    <>
+                      <Text style={styles.discountedPrice}>Rs {venue.discountedPrice}/hour</Text>
+                      <Text style={styles.originalPrice}>Rs {venue.pricePerHour}/hour</Text>
+                    </>
+                  ) : (
+                    <Text>Rs {venue.pricePerHour}/hour</Text>
+                  )}
+                </Text>
+              </View>
                 </ImageBackground>
               </Pressable>
             ))}
@@ -276,7 +286,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-
   spotlightImage: {},
   spotlightItem: {
     width: 220,
@@ -301,6 +310,16 @@ const styles = StyleSheet.create({
   spotlightPrice: {
     color: 'lightgreen',
     fontSize: 14,
+    fontWeight: 'bold',
+  },
+  originalPrice: {
+    color: 'lightgray',
+    fontSize: 14,
+    textDecorationLine: 'line-through', 
+  },
+  discountedPrice: {
+    color: 'lightgreen',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
