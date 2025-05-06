@@ -18,7 +18,12 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import UpdateVenueScreen from '../screen/vendor/UpdateVenueScreen';
 
+import VenueDetailScreen from '../screen/vendor/charts/VenueDetailScreen';
+
 import DiscountManagementScreen from '../screen/vendor/DiscountManagementScreen';
+
+
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -101,29 +106,33 @@ export function VendorStack() {
         }}
       />
 
+
       <Stack.Screen
         name="Main"
         component={BottomTabs}
         options={{headerShown: false}}
-      />
+        />
 
       <Stack.Screen
         name="DiscountManagementScreen"
         component={DiscountManagementScreen}
         options={{headerShown: false}}
-      />
+        />
 
       <Stack.Screen
         name="AddVenueScreen"
         component={AddVenueScreen}
         options={{title: 'Add Venue'}}
       />
+        
 
       <Stack.Screen
         name="UpdateVenueScreen"
         component={UpdateVenueScreen}
         options={{title: 'Update Venue'}}
       />
+
+ 
 
       <Stack.Screen
         name="SignIn"
@@ -150,6 +159,9 @@ export function VendorStack() {
         component={UserProfileDetails}
         options={{title: 'Profile Details'}}
       />
+
+      
+<Stack.Screen name="VenueDetail" component={VenueDetailScreen} options={{ title: "Venue Details" }} />
     </Stack.Navigator>
   );
 }

@@ -15,7 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import VenueCard from '../components/VenueCard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BookScreen = () => {
+const HistoryScreen = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,7 +123,7 @@ const BookScreen = () => {
   );
 };
 
-export default BookScreen;
+export default HistoryScreen;
 
 const styles = StyleSheet.create({
   container: {

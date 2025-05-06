@@ -24,6 +24,8 @@ import {AuthContext, AuthProvider} from '../context/AuthContext';
 import {VenueProvider} from '../context/VenueContext';
 import UserVerificationScreen from '../screen/UserVerificationScreen';
 
+import VenueDetailsScreen from '../screen/vendor/charts/VenueDetailScreen';
+
 const Stack = createNativeStackNavigator();
 
 function MainStack() {
@@ -59,6 +61,12 @@ function MainStack() {
           title: 'Sign In',
           headerShown: false,
         }}
+      />
+
+      <Stack.Screen
+        name="VenueDetail"
+        component={VenueDetailsScreen}
+        options={{title: 'Venue Details'}}
       />
 
       <Stack.Screen

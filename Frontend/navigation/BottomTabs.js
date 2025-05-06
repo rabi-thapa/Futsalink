@@ -2,7 +2,7 @@ import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screen/HomeScreen';
 import SearchScreen from '../screen/SearchScreen';
-import BookScreen from '../screen/BookScreen';
+import HistoryScreen from '../screen/HistoryScreen';
 import ProfileScreen from '../screen/ProfileScreen';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -43,15 +43,15 @@ function BottomTabs() {
             ),
         }}
       />
-
       <Tab.Screen
-        name="BOOK"
-        component={BookScreen}
+        name="HISTORY"
+        component={HistoryScreen}
         options={{
+          headerShown: false,
           tabBarActiveTintColor: 'green',
           tabBarIcon: ({focused}) => (
-            <SimpleLineIcons
-              name="book-open"
+            <AntDesign
+              name={focused ? 'clockcircleo' : 'clockcircleo'} // You can also use 'history' for focused
               size={24}
               color={focused ? 'green' : '#989898'}
             />

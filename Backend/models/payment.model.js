@@ -26,13 +26,10 @@ const paymentSchema = new mongoose.Schema(
             default: "initiated",
         },
 
-
         gatewayReference: {
             type: String, // Store gateway-specific ID (e.g., pidx for Khalti, paymentId for PayPal)
             required: false, // Make this field optional initially
         },
-
-       
 
         transactionId: {
             type: String,

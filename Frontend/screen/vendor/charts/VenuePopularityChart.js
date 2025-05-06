@@ -1,95 +1,137 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Dimensions,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+import { BarChart } from "react-native-gifted-charts";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const VenuePopularityChart = () => {
-  const [venuePopularityData, setVenuePopularityData] = useState({ labels: [], datasets: [] });
+const VenuePopularityChart = ({ navigation }) => {
+  const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const screenWidth = Dimensions.get("window").width;
 
   useEffect(() => {
-    const fetchVenuePopularityData = async () => {
+    const fetchPopularity = async () => {
       try {
-        const token = await AsyncStorage.getItem('accessToken');
-        const response = await axios.get('http://10.0.2.2:3000/api/dashboard/venue-popularity', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const token = await AsyncStorage.getItem("accessToken");
+        const res = await axios.get(
+          "http://10.0.2.2:3000/api/dashboard/venue-popularity",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-        // Validate response data
-        if (!response.data || !Array.isArray(response.data.labels) || !response.data.datasets) {
-          throw new Error('Invalid data format from server');
+        if (res.data && res.data.labels && res.data.datasets) {
+          const labels = res.data.labels.map((label) => label.split(" ")[0]);
+          const values = res.data.datasets[0].data;
+          const ids = res.data.venueIds;
+
+          const formattedData = labels.map((label, index) => ({
+            value: values[index],
+            label,
+            venueId: ids[index],
+            onPress: () => {
+              navigation.navigate("VenueDetail", { venueId: ids[index] });
+            },
+            frontColor: "#3b82f6",
+            gradientColor: "#60a5fa",
+          }));
+
+          setChartData(formattedData);
         }
-
-        // Modify labels to show only the first name of each venue
-        const modifiedLabels = response.data.labels.map(label => label.split(' ')[0]);
-
-        // Update the state with modified labels
-        setVenuePopularityData({
-          ...response.data,
-          labels: modifiedLabels,
-        });
-      } catch (error) {
-        console.error('Error fetching venue popularity data:', error);
-        setError('Failed to load venue popularity data.');
+      } catch (err) {
+        console.error("Error fetching chart data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchVenuePopularityData();
+    fetchPopularity();
   }, []);
 
-  // Fallback UI for loading state
   if (loading) {
     return (
-      <View style={{ marginVertical: 20 }}>
-        <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>Venue Popularity</Text>
-        <Text style={{ textAlign: 'center', marginTop: 10 }}>Loading...</Text>
-      </View>
-    );
-  }
-
-  // Fallback UI for error state
-  if (error) {
-    return (
-      <View style={{ marginVertical: 20 }}>
-        <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>Venue Popularity</Text>
-        <Text style={{ textAlign: 'center', marginTop: 10, color: 'red' }}>{error}</Text>
-      </View>
-    );
-  }
-
-  // Fallback UI for no data
-  if (venuePopularityData.labels.length === 0 || venuePopularityData.datasets[0].data.length === 0) {
-    return (
-      <View style={{ marginVertical: 20 }}>
-        <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>Venue Popularity</Text>
-        <Text style={{ textAlign: 'center', marginTop: 10 }}>No venue popularity data available.</Text>
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text style={styles.loaderText}>Loading chart...</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ marginVertical: 20 }}>
-      <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>Venue Popularity</Text>
-      <BarChart
-        data={venuePopularityData}
-        width={350}
-        height={220}
-        chartConfig={{
-          backgroundColor: '#ffffff',
-          backgroundGradientFrom: '#ffffff',
-          backgroundGradientTo: '#ffffff',
-          color: (opacity = 1) => `rgba(0, 128, 0, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-          strokeWidth: 2,
-        }}
-        style={{ marginVertical: 8 }}
-      />
-    </View>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.chartContainer}>
+        <Text style={styles.title}>📊 Venue Popularity</Text>
+        <BarChart
+          data={chartData}
+          barWidth={28}
+          width={screenWidth - 32}
+
+          spacing={34}
+          initialSpacing={10}
+          maxValue={Math.max(...chartData.map((item) => item.value)) + 5}
+          xAxisLabelTextStyle={styles.xAxisLabel}
+          yAxisTextStyle={styles.yAxisLabel}
+          labelWidth={50}
+          showScrollIndicator={false}
+          hideYAxisText
+          formatYLabel={(label) => `${label}`}
+          isThreeD
+          disablePress={false}
+          roundedTop
+          noOfSections={4}
+        />
+      </View>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  scrollContainer: {
+    paddingBottom: 10,
+    paddingHorizontal: 4,
+  },
+  chartContainer: {
+    backgroundColor: "#ffffff",
+    paddingVertical: 16,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 16,
+    color: "#1f2937",
+  },
+  xAxisLabel: {
+    color: "#4b5563",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  yAxisLabel: {
+    color: "#6b7280",
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loaderText: {
+    marginTop: 10,
+    color: "#6b7280",
+  },
+});
 
 export default VenuePopularityChart;

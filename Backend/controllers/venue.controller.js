@@ -3,6 +3,10 @@ const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 
 const Review= require("../models/review.model");
+const Booking= require("../models/booking.model");
+const Payment= require("../models/payment.model")
+
+const mongoose = require("mongoose");
 
 
 const calculateDiscountedPrice = (price, discount) => {
@@ -18,41 +22,8 @@ const calculateDiscountedPrice = (price, discount) => {
   return null;
 };
 
-// const getVenueById = asyncHandler(async (req, res) => {
-//   try {
-//     const venueId = req.params.venueId;
 
-    
-//     const venue = await Venue.findById(venueId)
-//       .populate({
-//         path: 'reviews',
-//         select: 'rating', 
-//       })
-//       .exec();
 
-//     if (!venue) {
-//       return res.status(404).json({ message: "Venue not found" });
-//     }
-
-//     // Calculate the average rating
-//     const reviews = venue.reviews;
-//     const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
-//     const averageRating = reviews.length > 0 ? (totalRatings / reviews.length).toFixed(1) : null;
-
-    
-//     return res.status(200).json({
-//       success: true,
-//       message: "Venue fetched successfully",
-//       venue: {
-//         ...venue.toObject(),
-//         averageRating: averageRating || 'N/A', 
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Error fetching venue:", error);
-//     return res.status(500).json({ message: "Internal Server Error" });
-//   }
-// });
 
 
 const getVenueById = asyncHandler(async (req, res) => {
@@ -67,7 +38,6 @@ const getVenueById = asyncHandler(async (req, res) => {
     if (!venue) {
       return res.status(404).json({ message: "Venue not found" });
     }
-
     // Calculate the average rating
     const reviews = venue.reviews;
     const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
@@ -86,6 +56,8 @@ const getVenueById = asyncHandler(async (req, res) => {
         discountedPrice = parseFloat(discountedPrice.toFixed(2)); // Round to 2 decimal places
       }
     }
+
+    console.log("get Venue by id");
 
     return res.status(200).json({
       success: true,
@@ -111,8 +83,6 @@ const getVendorVenues = asyncHandler(async (req, res) => {
         // console.log("Vendor ID:", req.user._id);
 
 
-
-        // console.log('vendorId', vendorId);
         if (!vendorId) {
             return res.status(400).json({ message: "Vendor ID is required" });
         }
@@ -142,44 +112,6 @@ const getVendorVenues = asyncHandler(async (req, res) => {
 
 
 
-// const getAllVenues = asyncHandler(async (req, res) => {
-//   try {
-//     const { page = 1, limit = 10, location, search = '', sortBy = 'location', sortOrder = 'asc' } = req.query;
-//     const pageNumber = parseInt(page, 10);
-//     const limitNumber = parseInt(limit, 10);
-
-//     const query = {};
-//     if (location && location.trim()) {
-//       query['location.locationName'] = { $regex: new RegExp(location, 'i') };
-//     }
-//     if (search && search.trim()) {
-//       query.venueName = { $regex: new RegExp(search, 'i') };
-//     }
-
-//     let sortCriteria = {};
-//     const order = sortOrder === 'desc' ? -1 : 1;
-//     if (sortBy === 'venueName') sortCriteria.venueName = order;
-//     else if (sortBy === 'price') sortCriteria.pricePerHour = order;
-//     else sortCriteria['location.locationName'] = order;
-
-//     const venues = await Venue.find(query)
-//       .sort(sortCriteria)
-//       .skip((pageNumber - 1) * limitNumber)
-//       .limit(limitNumber);
-
-//     const totalVenues = await Venue.countDocuments(query);
-//     return res.status(200).json({
-//       message: 'All venues retrieved successfully',
-//       totalVenues,
-//       totalPages: Math.ceil(totalVenues / limitNumber),
-//       currentPage: pageNumber,
-//       venues,
-//     });
-//   } catch (error) {
-//     console.error('Fetching All Venues Error:', error);
-//     return res.status(500).json({ message: 'Internal Server Error' });
-//   }
-// });
   
 
 const getAllVenues = asyncHandler(async (req, res) => {
@@ -582,6 +514,54 @@ const listDiscounts = asyncHandler(async (req, res) => {
 
 
 
+const { isValidObjectId } = mongoose.Types; // ✅ Use built-in validator
+
+
+
+
+
+
+const getVenueRevenue = async (req, res) => {
+  try {
+    const venueId = req.params.venueId;
+
+    // 1. Find the venue by ID
+    const venue = await Venue.findById(venueId);
+    if (!venue) {
+      return res.status(404).json({ success: false, message: "Venue not found" });
+    }
+
+    // 2. Get all bookings for the venue
+    const bookings = await Booking.find({ venue: venueId });
+
+    // 3. Calculate total revenue using 'totalPrice'
+    const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+
+    // 4. Booking count
+    const bookingCount = bookings.length;
+
+    // 5. Calculate average revenue per booking
+    const averageRevenuePerBooking = bookingCount === 0 ? 0 : totalRevenue / bookingCount;
+
+    // 6. Send response in correct structure
+    return res.json({
+      success: true,
+      data: {
+        venueName: venue.venueName,
+        totalRevenue,
+        bookingCount,
+        averageRevenuePerBooking,
+      },
+    });
+
+  } catch (error) {
+    console.error("Error in getVenueRevenue:", error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+
+
 module.exports = {
     getVenueById,
     getVendorVenues,
@@ -599,4 +579,7 @@ module.exports = {
     updateDiscount,
     deleteDiscount,
     listDiscounts,
+
+
+    getVenueRevenue
 };
