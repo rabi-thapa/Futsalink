@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     color: '#555',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   selectedValue: {
     flexDirection: 'row',

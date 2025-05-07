@@ -16,9 +16,12 @@ import {
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 
+import {Provider as PaperProvider} from 'react-native-paper';
+import {theme} from './core/theme';
+
 import StackNavigator from './navigation/AppNavigation';
-import { AuthProvider } from './context/AuthContext'
-import { VenueProvider } from './context/VenueContext';
+import {AuthProvider} from './context/AuthContext';
+import {VenueProvider} from './context/VenueContext';
 import AppNavigation from './navigation/AppNavigation';
 
 function Section({children, title}) {
@@ -54,19 +57,14 @@ function App() {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
-
   const safePadding = '5%';
 
   return (
-    // <VenueProvider> 
-    //   <AuthProvider>
-    // <AppNavigation/>
-    // </AuthProvider>
-    // </VenueProvider>
-
-    <AuthProvider>
-      <AppNavigation />
-    </AuthProvider>
+    <PaperProvider theme={theme}>
+      <AuthProvider>
+        <AppNavigation />
+      </AuthProvider>
+    </PaperProvider>
   );
 }
 

@@ -19,49 +19,93 @@ const HistoryScreen = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // const fetchUserBookings = async () => {
+  //   try {
+  //     const token = await AsyncStorage.getItem('accessToken');
+  //     console.log('Token:', token);
+
+  //     const response = await fetch('http://10.0.2.2:3000/api/bookings/my-bookings', {
+  //       method: 'GET',
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+
+  //     // const text = await response.text(); 
+  //     // console.log('Raw response text:', text);
+
+  //     // Try parsing JSON manually
+  //     try {
+  //       const data = JSON.parse(text);
+  //       console.log('Parsed bookings data:', data);
+
+  //       if (response.ok) {
+  //         const transformed = data.bookings
+  //           .filter(booking => booking.venue) // Ensure venue exists
+  //           .map(booking => ({
+  //             id: booking._id,
+  //             name: booking.venue?.venueName || 'Unknown Venue',
+  //             image: booking.venue?.venueImage
+  //               ? `http://10.0.2.2:3000/${booking.venue.venueImage}`
+  //               : 'https://via.placeholder.com/150', // Fallback image
+  //             address: booking.venue?.location?.locationName || 'Unknown Location',
+  //             location: booking.venue?.location?.locationName || 'Unknown Location',
+  //             rating: 4,
+  //             timings: `${booking.startTime} - ${booking.endTime}`,
+  //             sportsAvailable: [],
+  //             bookings: booking,
+  //           }));
+
+  //         setBookings(transformed);
+  //       } else {
+  //         console.error('Failed to fetch bookings:', data.message);
+  //       }
+  //     } catch (jsonErr) {
+  //       console.error('Failed to parse JSON from server response:', jsonErr);
+  //     }
+  //   } catch (err) {
+  //     console.error('Error fetching bookings:', err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
   const fetchUserBookings = async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
       console.log('Token:', token);
-
+  
       const response = await fetch('http://10.0.2.2:3000/api/bookings/my-bookings', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      const text = await response.text(); // Avoid crash from invalid JSON
-      console.log('Raw response text:', text);
-
-      // Try parsing JSON manually
-      try {
-        const data = JSON.parse(text);
-        console.log('Parsed bookings data:', data);
-
-        if (response.ok) {
-          const transformed = data.bookings
-            .filter(booking => booking.venue) // Ensure venue exists
-            .map(booking => ({
-              id: booking._id,
-              name: booking.venue?.venueName || 'Unknown Venue',
-              image: booking.venue?.venueImage
-                ? `http://10.0.2.2:3000/${booking.venue.venueImage}`
-                : 'https://via.placeholder.com/150', // Fallback image
-              address: booking.venue?.location?.locationName || 'Unknown Location',
-              location: booking.venue?.location?.locationName || 'Unknown Location',
-              rating: 4,
-              timings: `${booking.startTime} - ${booking.endTime}`,
-              sportsAvailable: [],
-              bookings: booking,
-            }));
-
-          setBookings(transformed);
-        } else {
-          console.error('Failed to fetch bookings:', data.message);
-        }
-      } catch (jsonErr) {
-        console.error('Failed to parse JSON from server response:', jsonErr);
+  
+      const data = await response.json(); // DIRECT JSON PARSING
+      console.log('Parsed bookings data:', data);
+  
+      if (response.ok) {
+        const transformed = data.bookings
+          .filter(booking => booking.venue)
+          .map(booking => ({
+            id: booking._id,
+            name: booking.venue?.venueName || 'Unknown Venue',
+            image: booking.venue?.venueImage
+              ? `http://10.0.2.2:3000/${booking.venue.venueImage}`
+              : 'https://via.placeholder.com/150',
+            address: booking.venue?.location?.locationName || 'Unknown Location',
+            location: booking.venue?.location?.locationName || 'Unknown Location',
+            rating: 4,
+            timings: `${booking.startTime} - ${booking.endTime}`,
+            sportsAvailable: [],
+            bookings: booking,
+          }));
+  
+        setBookings(transformed);
+      } else {
+        console.error('Failed to fetch bookings:', data.message);
       }
     } catch (err) {
       console.error('Error fetching bookings:', err);
@@ -69,6 +113,7 @@ const HistoryScreen = () => {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchUserBookings();
@@ -94,7 +139,7 @@ const HistoryScreen = () => {
         </View>
       </View>
 
-      <Pressable style={styles.filterContainer}>
+      {/* <Pressable style={styles.filterContainer}>
         <View style={styles.filterBox}>
           <Text>Sports & Availability</Text>
         </View>
@@ -104,7 +149,7 @@ const HistoryScreen = () => {
         <View style={styles.filterBox}>
           <Text>Offers</Text>
         </View>
-      </Pressable>
+      </Pressable> */}
 
       {loading ? (
         <ActivityIndicator size="large" color="#000" style={{marginTop: 20}} />
@@ -155,7 +200,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    padding: 13,
+    // padding: 13,
   },
   filterBox: {
     padding: 10,

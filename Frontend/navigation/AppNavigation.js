@@ -3,6 +3,7 @@ import React, {useContext} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {NavigationContainer} from '@react-navigation/native';
 
+import StartScreen from '../screen/StartScreen';
 import SignInScreen from '../screen/SignInScreen';
 import OtpVerificationScreen from '../screen/OtpVerificationScreen';
 import SignUpScreen from '../screen/SignUpScreen';
@@ -15,6 +16,7 @@ import ReviewScreen from '../screen/ReviewScreen';
 import MapScreen from '../screen/MapScreen';
 
 import BookingSuccessScreen from '../screen/BookingSuccessScreen';
+import SignOutScreen from '../screen/SignOutScreen';
 
 import {VendorStack} from './VendorStack';
 import BottomTabs from './BottomTabs';
@@ -32,10 +34,17 @@ function MainStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen
+        name="Start"
+        component={StartScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
         name="SignIn"
         component={SignInScreen}
         options={{
-          title: 'Sign In',
           headerShown: false,
         }}
       />
@@ -78,7 +87,7 @@ function MainStack() {
       <Stack.Screen
         name="SignUp"
         component={SignUpScreen}
-        options={{title: 'Sign Up'}}
+        options={{title: 'Sign Up', headerShown: false}}
       />
       <Stack.Screen
         name="ChangePassword"
@@ -108,12 +117,24 @@ function MainStack() {
       />
 
       <Stack.Screen name="Review" component={ReviewScreen} />
-      <Stack.Screen name="MapScreen" component={MapScreen} />
+      <Stack.Screen
+        name="MapScreen"
+        component={MapScreen}
+        options={{headerShown: false}}
+      />
 
       <Stack.Screen
         name="PaymentScreen"
         component={PaymentScreen}
         options={{title: 'Payment'}}
+      />
+
+      <Stack.Screen
+        name="SignOut"
+        component={SignOutScreen}
+        options={{
+          headerShown: false,
+        }}
       />
 
       <Stack.Screen

@@ -12,7 +12,6 @@ const userSchema = new mongoose.Schema(
         lastName: {
             type: String,
             trim: true,
-            required: true,
         },
         role: {
             type: String,

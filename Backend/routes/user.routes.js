@@ -6,8 +6,7 @@ const verifyToken= require('../middlewares/auth.middleware')
 
 const{
     changeCurrentPassword,
-    checkEmailAndRole,
-    // signinUser,
+    proceedSignIn,
     sendOtp,
     verifyOtp,
     signupUser,
@@ -20,8 +19,7 @@ const{
 }= require("../controllers/user.controller");
 
 router.post("/", upload.single('profileImage'), signupUser);
-router.post("/check-email", checkEmailAndRole);
-// router.post("/signIn", signinUser);
+router.post("/proceed-signin", proceedSignIn);
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
 router.post("/changePassword", verifyToken, changeCurrentPassword);

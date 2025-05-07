@@ -67,13 +67,12 @@ const signupUser = async (req, res) => {
 
         const {
             firstName,
-            lastName,
             role,
             email,
             password,
         } = req.body;
 
-        if (![firstName, lastName, email, password].every(field => field && String(field).trim())) {
+        if (![firstName, email, password].every(field => field && String(field).trim())) {
             throw new ApiError(400, "All fields are required");
         }
 
@@ -90,7 +89,6 @@ const signupUser = async (req, res) => {
 
         const user = await User.create({
             firstName,
-            lastName,
             role,
             email,
             password,
@@ -210,30 +208,66 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 //     });
 // });
 
-const checkEmailAndRole = asyncHandler(async (req, res) => {
-    const { email, role } = req.body;
+// const checkEmailAndRole = asyncHandler(async (req, res) => {
+//     const { email, role } = req.body;
+  
+//     console.log("req.body", req.body);
+  
+//     if (!email || !role) {
+//       return res.status(400).json({
+//         message: "Both email and role are required.",
+//       }); 
+//     }
+  
+//     const user = await User.findOne({ email, role });
+  
+//     if (!user) {
+//       return res.status(404).json({
+//         message:
+//           "Couldn’t find an account with the provided email and role",
+//       });
+//     }
+  
+//     return res.status(200).json({
+//       message: "User verified successfully.",
+//     });
+//   });
+
+const proceedSignIn = asyncHandler(async (req, res) => {
+    const { email, password, role } = req.body;
   
     console.log("req.body", req.body);
   
-    if (!email || !role) {
+    // Validate inputs
+    if (!email || !password || !role) {
       return res.status(400).json({
-        message: "Both email and role are required.",
-      }); 
+        message: "Email, password, and role are required.",
+      });
     }
   
+    // Find user with matching email and role
     const user = await User.findOne({ email, role });
   
     if (!user) {
       return res.status(404).json({
-        message:
-          "Couldn’t find an account with the provided email and role",
+        message: "No user found with the provided email and role.",
       });
     }
   
+    // Check password
+    const isPasswordValid = await user.isPasswordCorrect(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        message: "Incorrect password.",
+      });
+    }
+  
+    // If all checks pass
     return res.status(200).json({
       message: "User verified successfully.",
     });
   });
+  
   
   
 const otpStore = {};
@@ -521,5 +555,5 @@ module.exports = {
     updateAccountDetails,
     updateUserProfileImage,
     refreshAccessToken,
-    checkEmailAndRole
+    proceedSignIn
 };
