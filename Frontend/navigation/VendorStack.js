@@ -22,6 +22,8 @@ import VenueDetailScreen from '../screen/vendor/charts/VenueDetailScreen';
 
 import DiscountManagementScreen from '../screen/vendor/DiscountManagementScreen';
 
+import VenuePeakHourDetailScreen from '../screen/vendor/charts/VenuePeakHourDetailScreen';
+
 
 
 const Tab = createBottomTabNavigator();
@@ -162,6 +164,14 @@ export function VendorStack() {
 
       
 <Stack.Screen name="VenueDetail" component={VenueDetailScreen} options={{ title: "Venue Details" }} />
+
+
+
+<Stack.Screen
+  name="VenuePeakHourDetail"
+  component={VenuePeakHourDetailScreen}
+  options={{ title: "Bookings by Hour" }}
+/>
     </Stack.Navigator>
   );
 }

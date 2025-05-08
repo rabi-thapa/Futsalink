@@ -44,8 +44,6 @@ router.delete("/venues/:venueId/discounts/:discountId", verifyToken, deleteDisco
 router.get("/venues/:venueId/discounts", verifyToken, listDiscounts);
 
 
-// router.get("/currentVenue/:venueId", verifyToken, getVenueById);
-
 
 
 router.get('/:venueId/revenue', verifyToken, getVenueRevenue);

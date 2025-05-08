@@ -4,18 +4,18 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import BookingTrendsChart from './charts/BookingTrendsChart';
 import RevenueAnalysisChart from './charts/RevenueAnalysisChart';
-import PaymentStatusChart from './charts/PaymentStatusChart';
+import  VenuePeakHoursChart from './charts/VenuePeakHoursChart';
 import VenuePopularityChart from './charts/VenuePopularityChart';
 
-const DashBoardScreen = () => {
-  const navigation = useNavigation();
+const DashBoardScreen = ({ navigation }) => {
+  navigation=  useNavigation();
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <VenuePopularityChart navigation={navigation} />
       <BookingTrendsChart />
       <RevenueAnalysisChart />
-      <PaymentStatusChart />
+      <VenuePeakHoursChart navigation={navigation}  />
     </ScrollView>
   );
 };

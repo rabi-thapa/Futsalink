@@ -141,6 +141,7 @@ const PaymentScreen = () => {
     if (data.url.includes('success')) {
       setShowPayPalModal(false);
       setStatus('Complete');
+      navigation.navigate('BookingSuccessScreen');
     } else if (data.url.includes('cancel')) {
       setShowPayPalModal(false);
       setStatus('Cancelled');
@@ -378,15 +379,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
-
-
-
-
-
-
-
-
-
-
-

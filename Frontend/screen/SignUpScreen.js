@@ -105,7 +105,7 @@ const SignUpScreen = ({navigation}) => {
         }}
       />
 
-<Image source={require('../assets/Logo2.png')} style={styles.logo} />
+      <Image source={require('../assets/logo2.png')} style={styles.logo} />
       <Header>Create Account</Header>
 
       <View style={styles.imagePickerWrapper}>
@@ -178,8 +178,6 @@ const SignUpScreen = ({navigation}) => {
 export default SignUpScreen;
 
 const styles = StyleSheet.create({
-
-
   logo: {
     width: 110,
     height: 110,

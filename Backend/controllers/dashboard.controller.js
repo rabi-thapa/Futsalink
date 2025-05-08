@@ -175,40 +175,7 @@ const getRevenueAnalysis = async (req, res) => {
 };
 
 
-// const getRevenueAnalysis = async (req, res) => {
-//   try {
-//     const revenueAnalysis = await Booking.aggregate([
-//       {
-//         $group: {
-//           _id: { $month: '$date' }, // Group by month
-//           totalRevenue: { $sum: '$totalPrice' }, // Sum total price per month
-//         },
-//       },
-//       { $sort: { '_id': 1 } }, // Sort by month
-//     ]);
 
-//     const revenueData = {
-//       labels: revenueAnalysis.length > 0 
-//         ? revenueAnalysis.map((revenue) => `Month ${revenue._id}`)
-//         : ['No Data'],
-//       datasets: [
-//         {
-//           data: revenueAnalysis.length > 0 
-//             ? revenueAnalysis.map((revenue) => revenue.totalRevenue)
-//             : [0],
-//         },
-//       ],
-//     };
-
-//     res.status(200).json(revenueData);
-//   } catch (error) {
-//     console.error('Error fetching revenue analysis:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
-
-// Payment Status Distribution
 // Payment Status Distribution
 const getPaymentStatus = async (req, res) => {
   try {
@@ -250,9 +217,6 @@ const getPaymentStatus = async (req, res) => {
 
 
 
-// Venue Popularity (Average Ratings)
-// Venue Popularity (Top Venues by Bookings)
-// Venue Popularity (Top Venues by Bookings)
 
 
 
@@ -294,6 +258,75 @@ const getVenuePopularity = async (req, res) => {
   };
 
 
+  const getAllVenuePeakHours =async (req, res) => {
+    try {
+        const peakHours = await Booking.aggregate([
+          {
+            $match: { paymentStatus: "paid" }
+          },
+          {
+            $group: {
+              _id: "$startTime",
+              totalBookings: { $sum: 1 }
+            }
+          },
+          { $sort: { totalBookings: -1 } }
+        ]);
+
+        console.log("peak hours", peakHours)
+    
+        res.status(200).json({
+          success: true,
+          data: peakHours.map(item => ({
+            hour: item._id,
+            bookings: item.totalBookings
+          }))
+        });
+      } catch (error) {
+        console.error("Error fetching peak hours for all venues:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+      }
+  };
+
+
+  const getBookingsByHour =async (req, res) => {
+    try {
+      const { startTime } = req.query;
+  
+      if (!startTime) {
+        return res.status(400).json({ message: "startTime is required" });
+      }
+  
+      const bookings = await Booking.find({
+        startTime,
+        paymentStatus: "paid"
+      })
+        .populate("venue", "venueName")
+        .populate("user", "fullName")
+        .exec();
+  
+      res.status(200).json({
+        success: true,
+        hour: startTime,
+        bookings: bookings.map(b => ({
+          id: b._id,
+          venueName: b.venue?.venueName || "Unknown Venue",
+          user: b.user?.fullName || "Anonymous",
+          date: b.date,
+          duration: `${b.startTime} - ${b.endTime}`,
+          price: b.totalPrice
+        }))
+      });
+  
+    } catch (error) {
+      console.error("Error fetching bookings by hour:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  };
+  
+ 
+
+
   
  
 
@@ -305,4 +338,7 @@ module.exports = {
   getRevenueAnalysis,
   getPaymentStatus,
   getVenuePopularity,
+
+  getAllVenuePeakHours,
+  getBookingsByHour
 };

@@ -33,7 +33,7 @@ const BookNowScreen = () => {
   const { selectedVenue, fetchVenueById, loading: venueLoading } = useContext(VenueContext);
 
   useEffect(() => {
-    console.log('Venue ID:', venueId); // Debugging line
+    console.log('Venue ID:', venueId); 
     if (venueId) {
       fetchVenueById(venueId);
     }

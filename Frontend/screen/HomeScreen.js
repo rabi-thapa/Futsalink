@@ -28,28 +28,34 @@ const HomeScreen = () => {
     }, []),
   );
 
+  const discountedVenues = venues.filter(venue => venue.discountedPrice);
+
   return (
     <ScrollView style={styles.container}>
-
-      
-      {/* <View style={styles.findGroundContainer}>
+      <View style={styles.findGroundContainer}>
         <Image
           style={styles.iconImage}
-          source={{ uri: 'https://cdn-icons-png.flaticon.com/512/785/785116.png' }}
+          source={{
+            uri: 'https://cdn-icons-png.flaticon.com/512/785/785116.png',
+          }}
         />
         <View>
           <View style={styles.findGroundHeader}>
             <Text style={styles.findGroundText}>Find a Ground</Text>
             <Image
               style={styles.smallIcon}
-              source={{ uri: 'https://cdn-icons-png.flaticon.com/128/785/785116.png' }}
+              source={{
+                uri: 'https://cdn-icons-png.flaticon.com/128/785/785116.png',
+              }}
             />
           </View>
-          <Text style={styles.findGroundSubText}>Find and play at the best arenas near you</Text>
+          <Text style={styles.findGroundSubText}>
+            Find and play at the best arenas near you
+          </Text>
         </View>
-      </View>  */}
+      </View>
 
-      <View style={styles.activityContainer}>
+      {/* <View style={styles.activityContainer}>
         <View style={styles.activityHeader}>
           <Text style={styles.activityTitle}>Futsal Activity</Text>
           <Pressable style={styles.viewButton}>
@@ -60,59 +66,56 @@ const HomeScreen = () => {
         <Pressable style={styles.calendarButton}>
           <Text style={styles.calendarText}>View My Calendar</Text>
         </Pressable>
+      </View>  */}
+
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Deals of the Day</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#17B169" />
+        ) : discountedVenues.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScroll}>
+            {discountedVenues.map(venue => (
+              <Pressable
+                key={`${venue._id}-${venue.venueName}`}
+                style={styles.dealCard}
+                onPress={() =>
+                  navigation.navigate('BookNow', {venueId: venue._id})
+                }>
+                <Image
+                  source={{uri: `http://10.0.2.2:3000/${venue.venueImage}`}}
+                  style={styles.dealImage}
+                  onError={error =>
+                    console.error('Image loading error:', error.nativeEvent)
+                  }
+                />
+                <View style={styles.dealInfo}>
+                  <Text numberOfLines={1} style={styles.dealName}>
+                    {venue.venueName}
+                  </Text>
+                  <Text numberOfLines={1} style={styles.dealLocation}>
+                    {venue.location?.locationName || 'Unknown Location'}
+                  </Text>
+                  <View style={styles.priceBlock}>
+                    <Text style={styles.discountedPrice}>
+                      NPR {venue.discountedPrice}/hr
+                    </Text>
+                    <Text style={styles.originalPrice}>
+                      NPR {venue.pricePerHour}/hr
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : (
+          <Text>No discounted venues available</Text>
+        )}
       </View>
 
-      <View style={styles.actionContainer}>
-        <Pressable style={styles.actionBox}>
-          <Image
-            style={styles.actionImage}
-            source={{
-              uri: 'https://images.pexels.com/photos/262524/pexels-photo-262524.jpeg?auto=compress&cs=tinysrgb&w=800',
-            }}
-          />
-          <Pressable style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Play</Text>
-            <Text style={styles.actionSubText}>
-              Find and play at the best arenas near you
-            </Text>
-          </Pressable>
-        </Pressable>
-
-        <Pressable style={styles.actionBox}>
-          <Image
-            style={styles.actionImage}
-            source={{
-              uri: 'https://images.pexels.com/photos/262524/pexels-photo-262524.jpeg?auto=compress&cs=tinysrgb&w=800',
-            }}
-          />
-          <Pressable style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Play</Text>
-            <Text style={styles.actionSubText}>
-              Find and play at the best arenas near you
-            </Text>
-          </Pressable>
-        </Pressable>
-
-        <Pressable style={styles.actionBox}>
-          <Image
-            style={styles.actionImage}
-            source={{
-              uri: 'https://images.pexels.com/photos/262524/pexels-photo-262524.jpeg?auto=compress&cs=tinysrgb&w=800',
-            }}
-          />
-          <Pressable style={styles.actionTextContainer}>
-            <Text style={styles.actionTitle}>Play</Text>
-            <Text style={styles.actionSubText}>
-              Find and play at the best arenas near you
-            </Text>
-          </Pressable>
-        </Pressable>
-      </View>
-
-     
-
-
-<View style={styles.spotlightContainer}>
+      <View style={styles.spotlightContainer}>
         <Text style={styles.spotlightTitle}>Spotlight</Text>
         {loading ? (
           <ActivityIndicator size="large" color="green" />
@@ -120,36 +123,74 @@ const HomeScreen = () => {
           <Text>No venues available</Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {venues.map((venue) => (
+            {venues.map(venue => (
               <Pressable
                 key={`${venue._id}-${venue.venueName}`}
                 onPress={() =>
-                  navigation.navigate('BookNow', { venueId: venue._id })
-                }
-              >
+                  navigation.navigate('BookNow', {venueId: venue._id})
+                }>
                 <ImageBackground
                   imageStyle={styles.spotlightImage}
                   style={styles.spotlightItem}
-                  source={{ uri: `http://10.0.2.2:3000/${venue.venueImage}` }}
-                  onError={(error) =>
+                  source={{uri: `http://10.0.2.2:3000/${venue.venueImage}`}}
+                  onError={error =>
                     console.error('Image loading error:', error.nativeEvent)
-                  }
-                ><View style={styles.spotlightOverlay}>
-                <Text style={styles.spotlightArenaName}>{venue.venueName}</Text>
-                <Text style={styles.spotlightLocation}>
-                  {venue.location?.locationName || 'Unknown Location'}
-                </Text>
-                <Text style={styles.spotlightPrice}>
-                  {venue.discountedPrice ? (
-                    <>
-                      <Text style={styles.discountedPrice}>Rs {venue.discountedPrice}/hour</Text>
-                      <Text style={styles.originalPrice}>Rs {venue.pricePerHour}/hour</Text>
-                    </>
-                  ) : (
-                    <Text>Rs {venue.pricePerHour}/hour</Text>
-                  )}
-                </Text>
-              </View>
+                  }>
+                  {/* <View style={styles.spotlightOverlay}>
+                    <Text style={styles.spotlightArenaName}>
+                      {venue.venueName}
+                    </Text>
+                    <Text style={styles.spotlightLocation}>
+                      {venue.location?.locationName || 'Unknown Location'}
+                    </Text>
+                    <Text style={styles.spotlightPrice}>
+                      {venue.discountedPrice ? (
+                        <>
+                          <Text style={styles.discountedPrice}>
+                            Rs {venue.discountedPrice}/hour
+                          </Text>
+                          <Text style={styles.originalPrice}>
+                            Rs {venue.pricePerHour}/hour
+                          </Text>
+                        </>
+                      ) : (
+                        <Text>Rs {venue.pricePerHour}/hour</Text>
+                      )}
+                    </Text>
+                  </View> */}
+
+                  <View style={styles.spotlightOverlay}>
+                    <View>
+                      <Text style={styles.spotlightArenaName}>
+                        {venue.venueName}
+                      </Text>
+                      <Text style={styles.spotlightLocation}>
+                        {venue.location?.locationName || 'Unknown Location'}
+                      </Text>
+                    </View>
+
+                    <View style={styles.spotlightPrice}>
+                      {venue.discountedPrice ? (
+                        <>
+                          <Text style={styles.discountedPrice}>
+                            Rs {venue.discountedPrice}/hour
+                          </Text>
+                          <Text style={styles.originalPrice}>
+                            Rs {venue.pricePerHour}/hour
+                          </Text>
+                        </>
+                      ) : (
+                        <Text style={styles.discountedPrice}>
+                          Rs {venue.pricePerHour}/hour
+                        </Text>
+                      )}
+                    </View>
+
+                    <Text style={styles.spotlightExtra}>
+                      {venue.type?.toUpperCase()} | {venue.openingHours?.open} -{' '}
+                      {venue.openingHours?.close}
+                    </Text>
+                  </View>
                 </ImageBackground>
               </Pressable>
             ))}
@@ -167,23 +208,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#d5d8dc',
   },
-  headerLeftText: {
-    marginLeft: 15,
-  },
-  headerRightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginRight: 15,
-  },
-  profileImage: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-  },
+  // headerLeftText: {
+  //   marginLeft: 15,
+  // },
+  // headerRightContainer: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   gap: 10,
+  //   marginRight: 15,
+  // },
+  // profileImage: {
+  //   width: 30,
+  //   height: 30,
+  //   borderRadius: 15,
+  // },
 
   findGroundContainer: {
-    padding: 13,
+    padding: 8,
     backgroundColor: 'white',
     margin: 15,
     borderRadius: 12,
@@ -194,7 +235,7 @@ const styles = StyleSheet.create({
   iconImage: {
     width: 40,
     height: 40,
-    borderRadius: 25,
+    borderRadius: 10,
   },
   findGroundHeader: {
     flexDirection: 'row',
@@ -214,6 +255,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: 'gray',
   },
+
   activityContainer: {
     padding: 13,
     backgroundColor: 'white',
@@ -247,38 +289,68 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
-  actionContainer: {
-    padding: 13,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
 
-    flexDirection: 'row',
+  sectionContainer: {
+    padding: 13,
   },
-  actionBox: {
-    // flex: 1,
-    borderWidth: 1,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
-  actionImage: {
+  horizontalScroll: {
+    paddingVertical: 10,
+  },
+  dealCard: {
     width: 180,
-    height: 120,
+    backgroundColor: '#fff',
     borderRadius: 10,
+    marginRight: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 6,
   },
-  actionTextContainer: {
-    backgroundColor: 'white',
-    padding: 12,
-    width: 180,
-    borderRadius: 10,
+  
+  dealImage: {
+    width: '100%',
+    height: 100,
   },
-  actionTitle: {
-    fontSize: 15,
-    fontWeight: '500',
+  
+  dealInfo: {
+    padding: 10,
   },
-  actionSubText: {
-    fontSize: 15,
+  
+  dealName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  
+  dealLocation: {
+    fontSize: 14,
     color: 'gray',
-    marginTop: 7,
+    marginBottom: 8,
   },
+  
+  priceBlock: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  
+  originalPrice: {
+    color: 'red',
+    fontSize: 14,
+    textDecorationLine: 'line-through',
+  },
+  discountedPrice: {
+    color: 'green',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
   spotlightContainer: {
     padding: 13,
   },
@@ -286,40 +358,58 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  spotlightImage: {},
   spotlightItem: {
-    width: 220,
-    height: 280,
-    marginRight: 10,
-    marginVertical: 15,
+    width: 250,
+    height: 300,
+    marginRight: 12,
+    marginVertical: 10,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#000', // fallback if image fails
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 8,
   },
   spotlightOverlay: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 5,
-    borderRadius: 5,
+    flex: 1,
+
+    padding: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   spotlightArenaName: {
-    color: 'white',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
   spotlightLocation: {
-    color: 'white',
+    color: '#ccc',
     fontSize: 14,
+    marginTop: 2,
   },
   spotlightPrice: {
-    color: 'lightgreen',
-    fontSize: 14,
-    fontWeight: 'bold',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginTop: 10,
   },
-  originalPrice: {
-    color: 'lightgray',
-    fontSize: 14,
-    textDecorationLine: 'line-through', 
-  },
+
   discountedPrice: {
-    color: 'lightgreen',
-    fontSize: 16,
+    fontSize: 20,
+    color: '#4CAF50',
     fontWeight: 'bold',
+  },
+
+  originalPrice: {
+    fontSize: 18,
+    color: '#FF6961',
+    textDecorationLine: 'line-through',
+    fontWeight: 'bold',
+  },
+
+  spotlightExtra: {
+    marginTop: 5,
+    color: '#f0f0f0',
+    fontSize: 16,
   },
 });

@@ -15,9 +15,6 @@ paypal.configure({
 });
 
 
-
-
-
 const initiateKhaltiPayment = async (req, res) => {
     const { bookingId } = req.body;
   
@@ -29,6 +26,7 @@ const initiateKhaltiPayment = async (req, res) => {
         console.error("Error: Missing bookingId in request body");
         return res.status(400).json({ message: "Missing bookingId in request body" });
       }
+
       console.log("Booking ID validated successfully:", bookingId);
   
       // Fetch booking details from the database
@@ -140,36 +138,16 @@ const initiateKhaltiPayment = async (req, res) => {
 
 
 
-
-
-const handleKhaltiCallback = async (req, res) => {
-    console.log("handleKhaltiCallback function triggered");
-
+  const handleKhaltiCallback = async (req, res) => {
     const { pidx } = req.query;
-    console.log("PIDX from query parameters:", pidx);
-
     if (!pidx) {
-        console.error("Error: PIDX is missing in the query parameters");
-        return res
-            .status(400)
-            .json({ message: "Missing PIDX in query parameters" });
+        return res.status(400).json({ message: "Missing PIDX in query parameters" });
     }
 
     try {
-        console.log("Attempting to look up payment details using PIDX:", pidx);
-
-        // Log the Khalti secret key being used
-        console.log(
-            "KHALTI_SECRET_KEY from environment variables:",
-            process.env.KHALTI_SECRET_KEY
-        );
-
-        // Perform the lookup request to Khalti's API
         const lookupResponse = await axios.post(
             "https://dev.khalti.com/api/v2/epayment/lookup/",
-            {
-                pidx: pidx,
-            },
+            { pidx },
             {
                 headers: {
                     Authorization: `Key ${process.env.KHALTI_SECRET_KEY}`,
@@ -178,97 +156,43 @@ const handleKhaltiCallback = async (req, res) => {
             }
         );
 
-        console.log("Khalti Lookup Response:", lookupResponse.data);
-
         const { status, transaction_id } = lookupResponse.data;
 
-        if (!status || !transaction_id) {
-            console.error(
-                "Error: Missing 'status' or 'transaction_id' in Khalti lookup response"
-            );
-            return res
-                .status(500)
-                .json({ message: "Invalid Khalti lookup response" });
-        }
-
-        console.log("Payment status from Khalti:", status);
-
         if (status === "Completed") {
-            console.log(
-                "Payment status is 'Completed'. Proceeding to update booking details."
-            );
-
-            // Find the Payment entry using the pidx
-            const paymentDetails = await Payment.findOne({
-                gatewayReference: pidx,
-            });
-
-            console.log("Found Payment Details in database:", paymentDetails);
+            const paymentDetails = await Payment.findOne({ gatewayReference: pidx });
 
             if (!paymentDetails) {
-                console.error("Error: No Payment entry found for PIDX:", pidx);
                 return res.status(404).json({ message: "Payment not found" });
             }
 
-            console.log(
-                "Updating Booking status for booking ID:",
-                paymentDetails.booking
-            );
-
-            // Update the Booking status
-            const updatedBooking = await Booking.findByIdAndUpdate(
-                paymentDetails.booking, // Use the bookingId from the Payment model
-                { paymentStatus: "Paid", paymentMethod: "Khalti" },
+           
+            await Booking.findByIdAndUpdate(
+                paymentDetails.booking,
+                {
+                    paymentStatus: "paid",
+                    paidAt: new Date(),
+                    transactionId: transaction_id,
+                },
                 { new: true }
             );
 
-            console.log("Updated Booking Details:", updatedBooking);
-
-            if (!updatedBooking) {
-                console.error(
-                    "Error: Failed to update Booking status for booking ID:",
-                    paymentDetails.booking
-                );
-                return res
-                    .status(500)
-                    .json({ message: "Failed to update booking status" });
-            }
-
-            // Update the Payment status
+            
             paymentDetails.status = "successful";
             paymentDetails.transactionId = transaction_id;
             paymentDetails.paidAt = new Date();
             await paymentDetails.save();
 
-            console.log("Updated Payment Details:", paymentDetails);
+            // return res.redirect("/booking-success");
         } else {
-            console.log(
-                "Payment status is not 'Completed'. Redirecting to failure screen."
-            );
             return res.redirect("/booking-failure");
         }
     } catch (error) {
         console.error("Error verifying Khalti payment:", error);
-
-        if (error.response) {
-            console.error("Axios Error Response Data:", error.response.data);
-            console.error(
-                "Axios Error Response Status:",
-                error.response.status
-            );
-            console.error(
-                "Axios Error Response Headers:",
-                error.response.headers
-            );
-        } else if (error.request) {
-            console.error("Axios Error Request:", error.request);
-        } else {
-            console.error("Axios General Error:", error.message);
-        }
-
         return res.status(500).json({ message: "Failed to verify payment" });
     }
-};
+}
+
+
 
 const handlePaypalPayment = async (req, res) => {
     const { bookingId } = req.body;
@@ -367,12 +291,105 @@ const handlePaypalPayment = async (req, res) => {
             error: "Server error during payment initiation",
         });
     }
-};
+}
+
+
+// const paymentSuccess = async (req, res) => {
+//     const { PayerID, paymentId, bookingId, userId } = req.query;
+
+//     if (!PayerID || !paymentId || !bookingId || !userId) {
+//         return res.status(400).json({
+//             message:
+//                 "Missing required parameters: PayerID, paymentId, bookingId, or customerId",
+//         });
+//     }
+
+//     try {
+//         const booking = await Booking.findById(bookingId);
+//         const user = await User.findById(userId);
+
+//         const execute_payment_json = {
+//             payer_id: PayerID,
+//             transactions: [
+//                 {
+//                     amount: {
+//                         currency: "USD",
+//                         total: booking.totalPrice.toString(),
+//                     },
+//                 },
+//             ],
+//         };
+
+//         paypal.payment.execute(
+//             paymentId,
+//             execute_payment_json,
+//             async (error, payment) => {
+//                 if (error) {
+//                     console.error("Error executing payment: ", error);
+//                     return res.status(500).json({ error: "Payment execution failed" });
+//                 }
+
+//                 const updatedBooking = await Booking.findByIdAndUpdate(
+//                     bookingId,
+//                     {
+//                         // status: "paid",
+//                         paymentStatus: "paid",
+//                         paidAt: new Date(),
+//                         paymentId,
+//                         transactionId: payment.id,
+//                     },
+//                     { new: true }
+//                 );
+
+//                 // const savedPayment = await Payment.create({
+//                 //     booking: bookingId,
+//                 //     user: userId,
+//                 //     method: "paypal",
+//                 //     status: "successful",
+//                 //     gatewayReference: paymentId, 
+//                 //     transactionId: payment.id,
+//                 //     amount: booking.totalPrice,
+//                 //     currency: "USD",
+//                 //     paidAt: new Date(),
+//                 // });
+
+//                 // ✅ CHANGE 2: Save payment details including status as 'successful'
+//             const savedPayment = await Payment.findOneAndUpdate(
+//                 { booking: bookingId, method: "paypal" },
+//                 {
+//                     status: "successful",
+//                     gatewayReference: paymentId,
+//                     transactionId: payment.id,
+//                     paidAt: new Date(),
+//                 },
+//                 { new: true }
+//             );
+
+//                 res.json({
+//                     message: "Payment Successful",
+//                     booking: updatedBooking,
+//                     paymentDetails: payment,
+//                     savedPayment,
+//                 });
+//             }
+//         );
+//     } catch (error) {
+//         console.error("Error in payment success handler: ", error);
+//         res.status(500).json({
+//             error: "Server error while processing payment success",
+//         });
+//     }
+// };
+
+
 
 const paymentSuccess = async (req, res) => {
     const { PayerID, paymentId, bookingId, userId } = req.query;
 
+    console.log("Received query parameters:", { PayerID, paymentId, bookingId, userId });
+
     if (!PayerID || !paymentId || !bookingId || !userId) {
+        console.warn("Missing required parameters in query");
         return res.status(400).json({
             message:
                 "Missing required parameters: PayerID, paymentId, bookingId, or customerId",
@@ -380,14 +397,25 @@ const paymentSuccess = async (req, res) => {
     }
 
     try {
+        console.log("Fetching booking with ID:", bookingId);
         const booking = await Booking.findById(bookingId);
+
+        console.log("Fetching user with ID:", userId);
         const user = await User.findById(userId);
 
         if (!booking || !user) {
+            console.error("Booking or User not found", { booking, user });
             return res
                 .status(404)
                 .json({ message: "Booking or User not found" });
         }
+
+        // Log total price being used for PayPal transaction
+        console.log("Booking totalPrice:", booking.totalPrice);// Use a fixed rate or fetch dynamically
+        const NPR_TO_USD_RATE = 0.0075;
+        const totalPriceInUSD = (booking.totalPrice * NPR_TO_USD_RATE).toFixed(2);
+
+
 
         const execute_payment_json = {
             payer_id: PayerID,
@@ -395,60 +423,67 @@ const paymentSuccess = async (req, res) => {
                 {
                     amount: {
                         currency: "USD",
-                        total: booking.totalPrice.toString(),
+                        total: totalPriceInUSD, 
+                        // total: booking.totalPrice.toString(),
                     },
                 },
             ],
         };
 
-        paypal.payment.execute(
-            paymentId,
-            execute_payment_json,
-            async (error, payment) => {
-                if (error) {
-                    console.error("Error executing payment: ", error);
-                    return res
-                        .status(500)
-                        .json({ error: "Payment execution failed" });
-                }
+        console.log("Executing PayPal payment with JSON:", execute_payment_json);
 
-                const updatedBooking = await Booking.findByIdAndUpdate(
-                    bookingId,
-                    {
-                        status: "paid",
-                        paymentStatus: "completed",
-                        paidAt: new Date(),
-                        paymentId,
-                        transactionId: payment.id,
-                    },
-                    { new: true }
-                );
-
-                const savedPayment = await Payment.create({
-                    booking: bookingId,
-                    user: userId,
-                    method: "paypal",
-                    status: "successful",
-                    // paymentId,
-                    gatewayReference: paymentId, // Store PayPal paymentId
-                    transactionId: payment.id,
-                    amount: booking.totalPrice,
-                    currency: "USD",
-                    paidAt: new Date(),
-                });
-
-                res.json({
-                    message: "Payment Successful",
-                    booking: updatedBooking,
-                    paymentDetails: payment,
-                    savedPayment,
+        paypal.payment.execute(paymentId, execute_payment_json, async (error, payment) => {
+            if (error) {
+                console.error("Error executing PayPal payment:", error.response?.data || error);
+                return res.status(500).json({
+                    error: "Payment execution failed",
+                    details: error.response?.data || error.message,
                 });
             }
-        );
+
+            console.log("PayPal payment executed successfully:", payment);
+
+            console.log("Updating Booking status to 'paid' for booking ID:", bookingId);
+            const updatedBooking = await Booking.findByIdAndUpdate(
+                bookingId,
+                {
+                    paymentStatus: "paid",
+                    paidAt: new Date(),
+                    paymentId,
+                    transactionId: payment.id,
+                },
+                { new: true }
+            );
+
+            console.log("Updated Booking:", updatedBooking);
+
+            console.log("Updating Payment record for booking ID:", bookingId);
+            const savedPayment = await Payment.findOneAndUpdate(
+                { booking: bookingId, method: "paypal" },
+                {
+                    status: "successful",
+                    gatewayReference: paymentId,
+                    transactionId: payment.id,
+                    paidAt: new Date(),
+                },
+                { new: true }
+            );
+
+            console.log("Updated Payment record:", savedPayment);
+
+            console.log("Sending success response...");
+            res.json({
+                message: "Payment Successful",
+                booking: updatedBooking,
+                paymentDetails: payment,
+                savedPayment,
+            });
+        });
     } catch (error) {
-        console.error("Error in payment success handler: ", error);
+        console.error("Unexpected error in payment success handler:", error);
         res.status(500).json({
             error: "Server error while processing payment success",
+            details: error.message,
         });
     }
 };
