@@ -14,6 +14,10 @@ import ChangePassword from '../screen/ChangePassword';
 import UpdateProfileScreen from '../screen/UpdateProfileScreen';
 import UserProfileDetails from '../screen/UserProfileDetails';
 
+import StartScreen from '../screen/StartScreen';
+
+import SignOutScreen from '../screen/SignOutScreen';
+
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import UpdateVenueScreen from '../screen/vendor/UpdateVenueScreen';
@@ -115,11 +119,22 @@ export function VendorStack() {
         options={{headerShown: false}}
         />
 
+
+
       <Stack.Screen
         name="DiscountManagementScreen"
         component={DiscountManagementScreen}
         options={{headerShown: false}}
         />
+
+
+<Stack.Screen
+        name="Start"
+        component={StartScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
 
       <Stack.Screen
         name="AddVenueScreen"
@@ -161,6 +176,15 @@ export function VendorStack() {
         component={UserProfileDetails}
         options={{title: 'Profile Details'}}
       />
+
+<Stack.Screen
+        name="SignOut"
+        component={SignOutScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+
 
       
 <Stack.Screen name="VenueDetail" component={VenueDetailScreen} options={{ title: "Venue Details" }} />

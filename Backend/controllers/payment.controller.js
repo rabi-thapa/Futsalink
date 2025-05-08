@@ -1,3 +1,6 @@
+//Backend/controller/payment.controller.js
+
+
 const path = require("path");
 const axios = require("axios");
 
@@ -292,94 +295,6 @@ const handlePaypalPayment = async (req, res) => {
         });
     }
 }
-
-
-// const paymentSuccess = async (req, res) => {
-//     const { PayerID, paymentId, bookingId, userId } = req.query;
-
-//     if (!PayerID || !paymentId || !bookingId || !userId) {
-//         return res.status(400).json({
-//             message:
-//                 "Missing required parameters: PayerID, paymentId, bookingId, or customerId",
-//         });
-//     }
-
-//     try {
-//         const booking = await Booking.findById(bookingId);
-//         const user = await User.findById(userId);
-
-//         const execute_payment_json = {
-//             payer_id: PayerID,
-//             transactions: [
-//                 {
-//                     amount: {
-//                         currency: "USD",
-//                         total: booking.totalPrice.toString(),
-//                     },
-//                 },
-//             ],
-//         };
-
-//         paypal.payment.execute(
-//             paymentId,
-//             execute_payment_json,
-//             async (error, payment) => {
-//                 if (error) {
-//                     console.error("Error executing payment: ", error);
-//                     return res.status(500).json({ error: "Payment execution failed" });
-//                 }
-
-//                 const updatedBooking = await Booking.findByIdAndUpdate(
-//                     bookingId,
-//                     {
-//                         // status: "paid",
-//                         paymentStatus: "paid",
-//                         paidAt: new Date(),
-//                         paymentId,
-//                         transactionId: payment.id,
-//                     },
-//                     { new: true }
-//                 );
-
-//                 // const savedPayment = await Payment.create({
-//                 //     booking: bookingId,
-//                 //     user: userId,
-//                 //     method: "paypal",
-//                 //     status: "successful",
-//                 //     gatewayReference: paymentId, 
-//                 //     transactionId: payment.id,
-//                 //     amount: booking.totalPrice,
-//                 //     currency: "USD",
-//                 //     paidAt: new Date(),
-//                 // });
-
-//                 // ✅ CHANGE 2: Save payment details including status as 'successful'
-//             const savedPayment = await Payment.findOneAndUpdate(
-//                 { booking: bookingId, method: "paypal" },
-//                 {
-//                     status: "successful",
-//                     gatewayReference: paymentId,
-//                     transactionId: payment.id,
-//                     paidAt: new Date(),
-//                 },
-//                 { new: true }
-//             );
-
-//                 res.json({
-//                     message: "Payment Successful",
-//                     booking: updatedBooking,
-//                     paymentDetails: payment,
-//                     savedPayment,
-//                 });
-//             }
-//         );
-//     } catch (error) {
-//         console.error("Error in payment success handler: ", error);
-//         res.status(500).json({
-//             error: "Server error while processing payment success",
-//         });
-//     }
-// };
 
 
 

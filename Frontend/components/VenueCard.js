@@ -6,10 +6,23 @@ const VenueCard = ({ item }) => {
   const navigation = useNavigation();
   if (!item) return null;
 
+  // Parse date
+  const bookingDate = new Date(item.bookings?.date).toLocaleDateString();
+
+  // Calculate duration in hours
+  const getDuration = (start, end) => {
+    const [startHour, startMin] = start.split(':').map(Number);
+    const [endHour, endMin] = end.split(':').map(Number);
+    const startTime = startHour + startMin / 60;
+    const endTime = endHour + endMin / 60;
+    return (endTime - startTime).toFixed(1);
+  };
+
+  const duration = getDuration(item.bookings.startTime, item.bookings.endTime);
+
   return (
     <View style={styles.cardContainer}>
       <View style={styles.cardInner}>
-        {/* Left: Image */}
         <Image
           source={{
             uri: item.image?.startsWith('http')
@@ -19,7 +32,6 @@ const VenueCard = ({ item }) => {
           style={styles.thumbnail}
         />
 
-        {/* Right: Info */}
         <View style={styles.details}>
           <Text style={styles.name} numberOfLines={1}>
             {item.name}
@@ -27,16 +39,19 @@ const VenueCard = ({ item }) => {
           <Text style={styles.address} numberOfLines={1}>
             {item.address}
           </Text>
-          <Text style={styles.timing}>Booked: {item.timings}</Text>
-          <Text style={styles.price}>NPR {item.bookings?.price || 1250}</Text>
 
-          {/* Changed: Control buttons now in flex row */}
+          <Text style={styles.info}>📅 Date: {bookingDate}</Text>
+          <Text style={styles.info}>🕒 Time: {item.timings}</Text>
+          <Text style={styles.info}>⏱ Duration: {duration} hour(s)</Text>
+          <Text style={styles.status}>💳 Status: {item.bookings?.paymentStatus || 'unpaid'}</Text>
+          <Text style={styles.price}>Total: NPR {item.bookings?.totalPrice || 0}</Text>
+
           <View style={styles.controlButtons}>
             <TouchableOpacity
               style={styles.reviewButton}
               onPress={() =>
                 navigation.navigate('Review', {
-                  venueId: item.bookings.venue._id,
+                  venueId: item.bookings._id,
                   venueName: item.name,
                 })
               }
@@ -48,7 +63,7 @@ const VenueCard = ({ item }) => {
               style={styles.cancelButton}
               onPress={() =>
                 navigation.navigate('CancelBooking', {
-                  venueId: item.bookings.venue._id,
+                  bookingId: item.id,
                   venueName: item.name,
                 })
               }
@@ -66,69 +81,67 @@ export default VenueCard;
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: '#fff',
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    marginHorizontal: 4,
-    marginVertical: 8,
-    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    marginHorizontal: 8,
+    marginVertical: 10,
+    borderRadius: 8,
     shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 6,
-    padding: 6,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+    padding: 10,
   },
   cardInner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   thumbnail: {
-    width: '48%', 
-    aspectRatio: 1, 
+    width: '40%',
+    aspectRatio: 1,
     borderRadius: 10,
-    marginRight: 12,
+    marginRight: 10,
   },
   details: {
     flex: 1,
     justifyContent: 'space-between',
   },
   name: {
-    fontSize: 17, // Changed: Slightly bigger
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
   },
   address: {
-    color: '#666',
-    fontSize: 15, // Changed: Slightly bigger
-    marginBottom: 2,
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 6,
   },
-  timing: {
-    fontSize: 15, // Changed: Slightly bigger
+  info: {
+    fontSize: 14,
     color: '#333',
     marginBottom: 2,
   },
   status: {
-    fontSize: 15, // Changed: Slightly bigger
+    fontSize: 14,
     color: '#2e7d32',
-    marginBottom: 2,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   price: {
-    fontSize: 16, // Changed: Slightly bigger
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 9,
+    marginBottom: 10,
   },
-
   controlButtons: {
-    flexDirection: 'row', // Changed: Buttons aligned horizontally
-    gap: 10, // Optional: spacing between buttons
+    flexDirection: 'row',
+    gap: 10,
   },
   reviewButton: {
     paddingVertical: 6,
     paddingHorizontal: 14,
     backgroundColor: '#66BB6A',
     borderRadius: 6,
-    marginRight: 8,
   },
   reviewButtonText: {
     color: '#fff',

@@ -1,3 +1,5 @@
+//Backend/controller/booking.controller.js
+
 const Venue = require("../models/venue.model"); // Register the Venue model
 const Booking = require("../models/booking.model");
 const Payment = require("../models/booking.model");
@@ -93,82 +95,7 @@ const createBooking = asyncHandler(async (req, res) => {
   }
 });
 
-// const createBooking = asyncHandler(async (req, res) => {
-//     try {
-//         const { venue, date, startTime, endTime } = req.body;
-//         const user = req.user._id;
 
-//         console.log("req.body", req.body);
-
-//         if (!venue || !date || !startTime || !endTime || !user) {
-//             return res.status(400).json({ message: "All fields are required" });
-//         }
-
-//         // Convert date string to Date object
-//         const parsedDate = new Date(date);
-//         if (isNaN(parsedDate)) {
-//             return res.status(400).json({ message: "Invalid date format" });
-//         }
-
-//         const venueDetails = await Venue.findById(venue);
-//         if (!venueDetails) {
-//             return res.status(404).json({ message: "Venue not found" });
-//         }
-
-//         // Convert start and end times to Date objects for comparison
-//         const start = new Date(`1970-01-01T${startTime}:00`);
-//         const end = new Date(`1970-01-01T${endTime}:00`);
-
-//         // Validate time range
-//         const durationInMilliseconds = end - start;
-//         const durationInHours = durationInMilliseconds / (1000 * 60 * 60);
-//         if (durationInHours <= 0) {
-//             return res.status(400).json({ message: "Invalid time range" });
-//         }
-
-//         // Calculate total price based on duration
-//         const totalPrice = (venueDetails.pricePerHour || 0) * durationInHours;
-
-//         // Check for overlapping bookings
-//         const existingBooking = await Booking.findOne({
-//             venue: venue,
-//             date: date,
-//             $or: [
-//                 {
-//                     startTime: { $lt: endTime },
-//                     endTime: { $gt: startTime },
-//                 },
-//             ],
-//         });
-
-//         if (existingBooking) {
-//             return res.status(400).json({
-//                 message:
-//                     "Booking not available for this time slot. Please choose another time.",
-//             });
-//         }
-
-//         // Create a new booking
-//         const booking = new Booking({
-//             user,
-//             venue,
-//             date: parsedDate,
-//             startTime,
-//             endTime,
-//             status: "pending",
-//             paymentStatus: "pending",
-//             totalPrice,
-//         });
-
-//         console.log("booking made: ", booking);
-
-//         const savedBooking = await booking.save();
-//         res.status(201).json(savedBooking);
-//     } catch (error) {
-//         console.error("Error creating booking", error);
-//         res.status(500).json({ message: "Server error" });
-//     }
-// });
 
 const getUserBookings = asyncHandler(async (req, res) => {
     const user = req.user._id;
@@ -269,9 +196,65 @@ const getBookedSlots = asyncHandler(async (req, res) => {
     }
 });
 
+
+const cancelBooking = asyncHandler(async (req, res) => {
+  console.log("1. Entering cancelBooking function");
+
+  const { bookingId } = req.body;
+
+  if (!bookingId) {
+    console.error("2. Booking ID is missing in request body");
+    return res.status(400).json({ message: "Booking ID is required" });
+  }
+
+  console.log("3. Received bookingId:", bookingId);
+
+  // Find the booking
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    console.error("4. Booking not found for ID:", bookingId);
+    return res.status(404).json({ message: "Booking not found" });
+  }
+
+  console.log("5. Found booking:", booking._id);
+
+  // Optional: Check if already canceled
+  if (booking.paymentStatus === "cancelled") {
+    console.warn("6. Booking is already canceled:", bookingId);
+    return res.status(400).json({ message: "Booking already canceled" });
+  }
+
+  console.log("7. Proceeding to cancel the booking...");
+
+  // Soft delete: Mark as canceled
+  booking.paymentStatus = "cancelled";
+  await booking.save();
+  console.log("8. Booking status updated to 'canceled':", bookingId);
+
+  // Optional: Update related payment record
+  const paymentUpdateResult = await Payment.findOneAndUpdate(
+    { booking: bookingId },
+    { status: "cancelled" }
+  );
+
+  if (paymentUpdateResult) {
+    console.log("9. Payment status updated to 'cancelled' for booking:", bookingId);
+  } else {
+    console.warn("10. No payment found for booking:", bookingId);
+  }
+
+  console.log("11. Successfully completed cancellation process for booking:", bookingId);
+
+  res.status(200).json({
+    message: "Booking canceled successfully",
+    booking,
+  });
+});
+
 module.exports = {
     createBooking,
     getUserBookings,
     getVendorOrders,
     getBookedSlots,
+    cancelBooking
 };

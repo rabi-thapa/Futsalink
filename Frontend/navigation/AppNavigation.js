@@ -28,6 +28,10 @@ import UserVerificationScreen from '../screen/UserVerificationScreen';
 
 import VenueDetailsScreen from '../screen/vendor/charts/VenueDetailScreen';
 
+import CancelBookingScreen from '../screen/CancelBookingScreen';
+
+import HistoryScreen from '../screen/HistoryScreen';
+
 const Stack = createNativeStackNavigator();
 
 function MainStack() {
@@ -132,6 +136,21 @@ function MainStack() {
       <Stack.Screen
         name="SignOut"
         component={SignOutScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="CancelBooking"
+        component={CancelBookingScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="History"
+        component={HistoryScreen}
         options={{
           headerShown: false,
         }}
