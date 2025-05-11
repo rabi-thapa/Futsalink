@@ -159,79 +159,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     }
 });
 
-// const signinUser = asyncHandler(async (req, res) => {
-//     console.log("body: ", req.body);
-//     const { email, password } = req.body;
 
-//     if (!email || !password) {
-//         throw new ApiError(400, "Email and password are required");
-//     }
-
-//     const user = await User.findOne({ email });
-
-//     if (!user) {
-//         throw new ApiError(404, "User does not exist");
-//     }
-
-//     const isPasswordValid = await user.isPasswordCorrect(password);
-
-//     if (!isPasswordValid) {
-//         throw new ApiError(401, "Invalid user credentials");
-//     }
-
-//     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-//         user._id
-//     );
-
-//     const signedInUser = await User.findById(user._id).select(
-//         "-password -refreshToken"
-//     );
-
-//     const options = {
-//         httpOnly: true,
-//         secure: true,
-//     };
-
-//     return res.status(200).json({
-//         statusCode: 200,
-//         success: true,
-//         message: "User logged in successfully",
-//         user: signedInUser,
-//         userId: user._id,
-//         userRole: user.role,
-//         firstName: user.firstName,
-//         lastName: user.lastName,
-//         email: user.email,
-//         profileImage: user.profileImage,
-//         accessToken,
-//         refreshToken,
-//     });
-// });
-
-// const checkEmailAndRole = asyncHandler(async (req, res) => {
-//     const { email, role } = req.body;
-  
-//     console.log("req.body", req.body);
-  
-//     if (!email || !role) {
-//       return res.status(400).json({
-//         message: "Both email and role are required.",
-//       }); 
-//     }
-  
-//     const user = await User.findOne({ email, role });
-  
-//     if (!user) {
-//       return res.status(404).json({
-//         message:
-//           "Couldn’t find an account with the provided email and role",
-//       });
-//     }
-  
-//     return res.status(200).json({
-//       message: "User verified successfully.",
-//     });
-//   });
 
 const proceedSignIn = asyncHandler(async (req, res) => {
     const { email, password, role } = req.body;
@@ -285,12 +213,12 @@ const transporter = nodemailer.createTransport({
 const sendOtp = asyncHandler(async (req, res) => {
     const { email } = req.body;
   
-    console.log(email);
+    
     if (!email) {
       throw new ApiError(400, "Email is required");
     }
   
-    console.log("send OTP function trigger");
+   
     const otp = Math.floor(1000 + Math.random() * 9000).toString(); // Generate 4-digit OTP
     otpStore[email] = otp;
   
@@ -384,7 +312,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
       // For non-hardcoded OTPs, check against the stored OTP
       const storedOtp = otpStore[email];
       if (!storedOtp || storedOtp !== otp) {
-        throw new ApiError(400, "Invalid OTP");
+        return res.status(400).json({ message: "Invalid OTP" });
       }
       delete otpStore[email]; // Clear OTP after successful verification
     }
@@ -392,7 +320,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
     // Fetch user details
     const user = await User.findOne({ email });
     if (!user) {
-      throw new ApiError(404, "User not found");
+        return res.status(404).json({ message: "User not found" });
     }
   
     // Generate tokens
@@ -459,20 +387,29 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
             address,
         } = req.body;
 
+        // ✅ Validate firstName: must not be null, undefined, or empty string
+        if (!firstName || typeof firstName !== 'string' || firstName.trim() === '') {
+            return res.status(400).json({ message: 'First name cannot be empty' });
+        }
+
+        // Optional: Validate date of birth format
         if (dateOfBirth && !moment(dateOfBirth, moment.ISO_8601, true).isValid()) {
             return res.status(400).json({ message: 'Invalid date format for dateOfBirth' });
         }
 
+        // ✅ Update only fields that are provided
+        const updateData = {
+            firstName: firstName.trim(),
+            ...(lastName && { lastName: lastName.trim() }),
+            ...(email && { email: email.trim() }),
+            ...(gender && { gender }),
+            ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
+            ...(address && { address: address.trim() }),
+        };
+
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            {
-                firstName,
-                lastName,
-                email,
-                gender,
-                dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-                address,
-            },
+            updateData,
             { new: true }
         );
 
@@ -480,13 +417,16 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+        res.status(200).json({
+            message: 'User updated successfully',
+            user: updatedUser
+        });
+
     } catch (error) {
         console.error('Error updating user:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
-
 const updateUserProfileImage = asyncHandler(async (req, res) => {
     if (!req.file) {
         throw new ApiError(400, "Profile Image is missing");
@@ -547,7 +487,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 module.exports = {
     getCurrentUser,
     signupUser,
-    // signinUser,
+
     sendOtp, 
     verifyOtp,
     changeCurrentPassword,

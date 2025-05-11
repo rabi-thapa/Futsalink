@@ -3,8 +3,13 @@ const Review = require("../models/review.model");
 const Venue = require("../models/venue.model");
 
 const addReview = asyncHandler(async (req, res) => {
+
+    console.log("add review backend func")
     const { rating, comment } = req.body;
     const venueId = req.params.venueId;
+
+    console.log("body", req.body);
+    console.log("venueId", venueId);
 
      // Validate rating
   if (!rating || rating < 1 || rating > 5) {

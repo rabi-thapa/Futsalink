@@ -7,33 +7,37 @@ import Header from '../components/Header';
 import Button from '../components/Button';
 import TextInput from '../components/TextInput';
 import BackButton from '../components/BackButton';
-import { theme } from '../core/theme';
 import Dropdown from '../components/Dropdown';
 
 const SignInScreen = ({ navigation }) => {
   const [email, setEmail] = useState({ value: '', error: '' });
   const [password, setPassword] = useState({ value: '', error: '' });
   const [role, setRole] = useState('');
-  const [roleError, setRoleError] = useState('');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const handleProceedToVerification = async () => {
+    // Reset snackbar
     setSnackbarVisible(false);
 
+    // Basic frontend validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValidEmail = email.value && emailRegex.test(email.value);
     const isValidPassword = password.value.length >= 6;
-    const roleValidationError = role ? '' : 'Role is required';
 
     setEmail({ ...email, error: isValidEmail ? '' : 'Enter a valid email.' });
     setPassword({
       ...password,
       error: isValidPassword ? '' : 'Password must be at least 6 characters.',
     });
-    setRoleError(roleValidationError);
 
-    if (!isValidEmail || !isValidPassword || roleValidationError) return;
+    if (!isValidEmail || !isValidPassword || !role) {
+      if (!role) {
+        setSnackbarMessage('Please select a role.');
+        setSnackbarVisible(true);
+      }
+      return;
+    }
 
     try {
       const response = await fetch('http://10.0.2.2:3000/api/user/proceed-signin', {
@@ -46,14 +50,10 @@ const SignInScreen = ({ navigation }) => {
         }),
       });
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Invalid server response.');
-      }
-
       const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(data.message || 'Verification failed.');
+        throw new Error(data.message || 'Verification failed');
       }
 
       setSnackbarMessage('Verified.');
@@ -66,7 +66,7 @@ const SignInScreen = ({ navigation }) => {
         });
       }, 500);
     } catch (error) {
-      setSnackbarMessage(error.message || 'Error occurred.');
+      setSnackbarMessage(error.message || 'Something went wrong.');
       setSnackbarVisible(true);
     }
   };
@@ -77,6 +77,7 @@ const SignInScreen = ({ navigation }) => {
       <Logo />
       <Header>Welcome to Futsalink.</Header>
 
+      {/* Email Input */}
       <TextInput
         label="Email"
         returnKeyType="next"
@@ -85,12 +86,10 @@ const SignInScreen = ({ navigation }) => {
         error={!!email.error}
         errorText={email.error}
         autoCapitalize="none"
-        autoCompleteType="email"
-        textContentType="emailAddress"
         keyboardType="email-address"
-        
       />
 
+      {/* Password Input */}
       <TextInput
         label="Password"
         returnKeyType="done"
@@ -101,32 +100,30 @@ const SignInScreen = ({ navigation }) => {
         secureTextEntry
       />
 
+      {/* Role Dropdown */}
       <Dropdown
         selectedValue={role}
-        onValueChange={(itemValue) => {
-          setRole(itemValue);
-          setRoleError('');
-        }}
-        theme={{ colors: { primary: 'green' } }}
+        onValueChange={(itemValue) => setRole(itemValue)}
         items={[
           { label: 'Role', value: '' },
           { label: 'Customer', value: 'customer' },
           { label: 'Vendor', value: 'vendor' },
         ]}
-
       />
-      <Text style={styles.errorText}>{roleError}</Text>
 
+      {/* Sign In Button */}
+      <Button mode="contained" onPress={handleProceedToVerification}>
+        Proceed to Verification
+      </Button>
+
+      {/* Forgot Password */}
       <View style={styles.forgotPassword}>
         <TouchableOpacity onPress={() => navigation.navigate('ResetPasswordScreen')}>
           <Text style={styles.forgot}>Forgot your password?</Text>
         </TouchableOpacity>
       </View>
 
-      <Button mode="contained" onPress={handleProceedToVerification}>
-        Proceed to Verification
-      </Button>
-
+      {/* Register Link */}
       <View style={styles.row}>
         <Text>Don’t have an account? </Text>
         <TouchableOpacity onPress={() => navigation.replace('SignUp')}>
@@ -134,6 +131,7 @@ const SignInScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
+      {/* Snackbar for feedback */}
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
@@ -141,8 +139,7 @@ const SignInScreen = ({ navigation }) => {
         style={[
           styles.snackbar,
           snackbarMessage.includes('Verified') ? { backgroundColor: '#4caf50' } : {},
-        ]}
-      >
+        ]}>
         {snackbarMessage}
       </Snackbar>
     </Background>
@@ -163,20 +160,12 @@ const styles = StyleSheet.create({
   },
   forgot: {
     fontSize: 16,
-    color: theme.colors.primary,
+    color: 'blue',
     fontWeight: 'bold',
-    fontFamily: 'sans-serif-medium',
-    fontStyle: 'italic',
   },
   link: {
     fontWeight: 'bold',
-    color: theme.colors.primary,
-  },
-  errorText: {
-    color: theme.colors.error,
-    fontSize: 13,
-    textAlign: 'left',
-    width: '100%',
+    color: 'blue',
   },
   snackbar: {
     position: 'absolute',

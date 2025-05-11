@@ -21,6 +21,7 @@ import SignOutScreen from '../screen/SignOutScreen';
 import {VendorStack} from './VendorStack';
 import BottomTabs from './BottomTabs';
 import HomeScreen from '../screen/HomeScreen';
+import OffersScreen from '../screen/OffersScreen';
 
 import {AuthContext, AuthProvider} from '../context/AuthContext';
 import {VenueProvider} from '../context/VenueContext';
@@ -102,6 +103,11 @@ function MainStack() {
         name="UpdateProfile"
         component={UpdateProfileScreen}
         options={{title: 'Update Profile'}}
+      />
+      <Stack.Screen
+        name="Offers"
+        component={OffersScreen}
+        options={{title: 'Offers', headerShown: false}}
       />
       <Stack.Screen
         name="UserProfileDetails"

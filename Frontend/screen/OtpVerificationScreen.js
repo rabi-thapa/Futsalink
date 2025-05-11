@@ -19,7 +19,8 @@ import Paragraph from '../components/Paragraph';
 const OtpVerificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { email, role } = route.params;
+
+  const { email} = route.params;
 
   const [otp, setOtp] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -56,13 +57,15 @@ const OtpVerificationScreen = () => {
       await AsyncStorage.setItem('userId', data.userId);
       await AsyncStorage.setItem('userRole', data.userRole);
 
+       // Navigate based on role
       if (data.userRole === 'customer') {
         navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else if (data.userRole === 'vendor') {
         navigation.reset({ index: 0, routes: [{ name: 'VendorStack' }] });
       }
     } catch (error) {
-      Alert.alert('Error', error.message);
+     // Show alert for wrong OTP or other errors
+     Alert.alert('OTP Error', error.message || 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }

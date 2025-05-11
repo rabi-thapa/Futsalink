@@ -6,6 +6,9 @@ const VenueCard = ({ item }) => {
   const navigation = useNavigation();
   if (!item) return null;
 
+
+  console.log("item", item.bookings.venue._id);
+
   // Parse date
   const bookingDate = new Date(item.bookings?.date).toLocaleDateString();
 
@@ -51,8 +54,8 @@ const VenueCard = ({ item }) => {
               style={styles.reviewButton}
               onPress={() =>
                 navigation.navigate('Review', {
-                  venueId: item.bookings._id,
-                  venueName: item.name,
+                  venueId: item.bookings.venue._id, // ✅ Correct path
+      venueName: item.name,
                 })
               }
             >

@@ -116,28 +116,44 @@ const getVendorVenues = asyncHandler(async (req, res) => {
 
 const getAllVenues = asyncHandler(async (req, res) => {
   try {
-    const { page = 1, limit = 10, location, search = '', sortBy = 'location', sortOrder = 'asc' } = req.query;
+    const { page = 1, limit = 10, location, search = '', sortBy = 'location', sortOrder = 'asc', discounted } = req.query;
+
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
     const query = {};
+
+    // Location filter
     if (location && location.trim()) {
       query['location.locationName'] = { $regex: new RegExp(location, 'i') };
     }
+
+    // Name search filter
     if (search && search.trim()) {
       query.venueName = { $regex: new RegExp(search, 'i') };
     }
+
+    // Filter discounted venues (current active ones)
+    if (discounted === 'true') {
+      const now = new Date();
+      query['discount.discountPercentage'] = { $gt: 0 };
+      query['discount.validFrom'] = { $lte: now };
+      query['discount.validUntil'] = { $gte: now };
+    }
+
+     // Sorting
     let sortCriteria = {};
     const order = sortOrder === 'desc' ? -1 : 1;
     if (sortBy === 'venueName') sortCriteria.venueName = order;
     else if (sortBy === 'price') sortCriteria.pricePerHour = order;
     else sortCriteria['location.locationName'] = order;
 
+     // Fetch filtered venues
     const venues = await Venue.find(query)
       .sort(sortCriteria)
       .skip((pageNumber - 1) * limitNumber)
       .limit(limitNumber);
 
-    // Add discounted price to each venue
+     // Compute discounted price for each venue
     const venuesWithDiscounts = venues.map((venue) => {
       const discountedPrice = calculateDiscountedPrice(
         venue.pricePerHour,
@@ -148,6 +164,9 @@ const getAllVenues = asyncHandler(async (req, res) => {
         discountedPrice: discountedPrice || null,
       };
     });
+
+   
+    
 
     const totalVenues = await Venue.countDocuments(query);
     return res.status(200).json({
@@ -387,13 +406,19 @@ const addDiscount = asyncHandler(async (req, res) => {
 
     // Validate input
     if (!discountPercentage || !validFrom || !validUntil) {
-      throw new ApiError(400, "All fields (discountPercentage, validFrom, validUntil) are required.");
+      return res.status(400).json({
+        success: false,
+        message: "All fields (discountPercentage, validFrom, validUntil) are required.",
+      });
     }
 
     // Find the venue
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      throw new ApiError(404, "Venue not found.");
+      return res.status(404).json({
+        success: false,
+        message: "Venue not found.",
+      });
     }
 
     // Update or create the discount
@@ -414,53 +439,72 @@ const addDiscount = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error("Error adding/updating discount:", error);
-    return res.status(error.statusCode || 500).json({ message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 });
-
 
 const updateDiscount = asyncHandler(async (req, res) => {
   try {
-      const { venueId, discountId } = req.params; // Extract venue ID and discount ID from URL params
-      const { discountPercentage, validFrom, validUntil, description } = req.body;
+    const { venueId, discountId } = req.params;
+    const { discountPercentage, validFrom, validUntil, description } = req.body;
 
-      // Find the venue
-      const venue = await Venue.findById(venueId);
-      if (!venue) {
-          throw new ApiError(404, "Venue not found.");
-      }
-
-      // Find the specific discount in the venue's discounts array
-      const discountIndex = venue.discounts.findIndex(
-          (discount) => discount._id.toString() === discountId
-      );
-      if (discountIndex === -1) {
-          throw new ApiError(404, "Discount not found.");
-      }
-
-      // Update the discount
-      venue.discounts[discountIndex] = {
-          ...venue.discounts[discountIndex].toObject(),
-          discountPercentage: discountPercentage || venue.discounts[discountIndex].discountPercentage,
-          validFrom: validFrom || venue.discounts[discountIndex].validFrom,
-          validUntil: validUntil || venue.discounts[discountIndex].validUntil,
-          description: description || venue.discounts[discountIndex].description,
-      };
-
-      // Save the updated venue
-      await venue.save();
-
-      return res.status(200).json({
-          success: true,
-          message: "Discount updated successfully.",
-          venue,
+    // Find the venue
+    const venue = await Venue.findById(venueId);
+    if (!venue) {
+      return res.status(404).json({
+        success: false,
+        message: "Venue not found.",
       });
+    }
+
+    // Ensure venue has a discounts array
+    if (!venue.discounts || venue.discounts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No discounts found for this venue.",
+      });
+    }
+
+    // Find the specific discount in the venue's discounts array
+    const discountIndex = venue.discounts.findIndex(
+      (discount) => discount._id.toString() === discountId
+    );
+
+    if (discountIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Discount not found.",
+      });
+    }
+
+    // Update the discount
+    venue.discounts[discountIndex] = {
+      ...venue.discounts[discountIndex].toObject(),
+      discountPercentage: discountPercentage || venue.discounts[discountIndex].discountPercentage,
+      validFrom: validFrom || venue.discounts[discountIndex].validFrom,
+      validUntil: validUntil || venue.discounts[discountIndex].validUntil,
+      description: description || venue.discounts[discountIndex].description,
+    };
+
+    // Save the updated venue
+    await venue.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Discount updated successfully.",
+      venue,
+    });
   } catch (error) {
-      console.error("Error updating discount:", error);
-      return res.status(error.statusCode || 500).json({ message: error.message });
+    console.error("Error updating discount:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 });
-
 
 
 const deleteDiscount = asyncHandler(async (req, res) => {
@@ -470,7 +514,10 @@ const deleteDiscount = asyncHandler(async (req, res) => {
     // Find the venue
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      throw new ApiError(404, "Venue not found.");
+      return res.status(404).json({
+        success: false,
+        message: "Venue not found.",
+      });
     }
 
     // Remove the discount
@@ -486,10 +533,12 @@ const deleteDiscount = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error("Error deleting discount:", error);
-    return res.status(error.statusCode || 500).json({ message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 });
-
 
 const listDiscounts = asyncHandler(async (req, res) => {
   try {
@@ -498,7 +547,10 @@ const listDiscounts = asyncHandler(async (req, res) => {
     // Find the venue
     const venue = await Venue.findById(venueId).select("discount");
     if (!venue) {
-      throw new ApiError(404, "Venue not found.");
+      return res.status(404).json({
+        success: false,
+        message: "Venue not found.",
+      });
     }
 
     return res.status(200).json({
@@ -508,7 +560,10 @@ const listDiscounts = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error("Error listing discount:", error);
-    return res.status(error.statusCode || 500).json({ message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 });
 

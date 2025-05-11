@@ -95,8 +95,8 @@ const ProfileScreen = () => {
             title="Change Password"
             onPress={() => navigation.navigate('ChangePassword')}
           />
-          <MenuItem icon="calendar" title="View My Bookings" />
-          <MenuItem icon="tag" title="Offers" />
+          <MenuItem icon="calendar" title="View My Bookings"  onPress={() => navigation.navigate('History')} />
+          <MenuItem icon="tag" title="Offers" onPress={() => navigation.navigate('Offers')} />
           <MenuItem icon="delete" title="Deactivate/Delete Account" />
           <MenuItem icon="logout" title="Logout" onPress={moveToSignOut} />
         </View>

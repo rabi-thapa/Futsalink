@@ -11,12 +11,12 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Config from 'react-native-config';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import moment from 'moment';
 
 const DiscountManagementScreen = ({ route }) => {
   const { venueId } = route.params;
-  const VENUE_ENDPOINT = Config.VENUE_ENDPOINT;
+  const VENUE_ENDPOINT = Config.VENUE_ENDPOINT || 'http://10.0.2.2:3000/api';
 
-  // State for discount
   const [discount, setDiscount] = useState({
     discountPercentage: '',
     validFrom: '',
@@ -24,17 +24,14 @@ const DiscountManagementScreen = ({ route }) => {
     description: '',
   });
 
-  // State for loading and date picker visibility
   const [loading, setLoading] = useState(true);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [dateType, setDateType] = useState(''); // Tracks whether the user is selecting 'validFrom' or 'validUntil'
+  const [dateType, setDateType] = useState('');
 
-  // Fetch the discount for the selected venue
   const fetchDiscount = async () => {
     try {
       setLoading(true);
       const accessToken = await AsyncStorage.getItem('accessToken');
-
       if (!accessToken) {
         Alert.alert('Error', 'You need to be logged in');
         return;
@@ -49,14 +46,10 @@ const DiscountManagementScreen = ({ route }) => {
 
       const data = await response.json();
 
-
-      console.log("data", data);
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch discount');
       }
 
-      
       setDiscount({
         ...data.discount,
         discountPercentage: data.discount?.discountPercentage?.toString() || '',
@@ -69,9 +62,8 @@ const DiscountManagementScreen = ({ route }) => {
     }
   };
 
-  // Handle date selection
   const handleConfirmDate = (date) => {
-    const formattedDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    const formattedDate = moment(date).format('YYYY-MM-DD');
     if (dateType === 'validFrom') {
       setDiscount({ ...discount, validFrom: formattedDate });
     } else if (dateType === 'validUntil') {
@@ -80,31 +72,64 @@ const DiscountManagementScreen = ({ route }) => {
     hideDatePicker();
   };
 
-  // Show date picker
   const showDatePicker = (type) => {
-    setDateType(type); // Set the type ('validFrom' or 'validUntil')
+    setDateType(type);
     setDatePickerVisibility(true);
   };
 
-  // Hide date picker
   const hideDatePicker = () => {
     setDatePickerVisibility(false);
   };
 
-  // Save or update the discount
   const saveOrUpdateDiscount = async () => {
     try {
       const accessToken = await AsyncStorage.getItem('accessToken');
-
       if (!accessToken) {
         Alert.alert('Error', 'You need to be logged in');
         return;
       }
 
-      const method = discount._id ? 'PUT' : 'POST'; // Use PUT if discount exists, POST otherwise
+      const { discountPercentage, validFrom, validUntil } = discount;
 
-      const response = await fetch(`${VENUE_ENDPOINT}/venues/${venueId}/discounts`, {
-        method: method,
+      if (!discountPercentage || isNaN(parseFloat(discountPercentage))) {
+        Alert.alert('Validation Error', 'Discount percentage is required and must be a number.');
+        return;
+      }
+
+      const percentage = parseFloat(discountPercentage);
+      if (percentage < 0 || percentage > 100) {
+        Alert.alert('Validation Error', 'Discount percentage must be between 0 and 100.');
+        return;
+      }
+
+      if (!validFrom) {
+        Alert.alert('Validation Error', 'Valid From date is required.');
+        return;
+      }
+
+      if (!validUntil) {
+        Alert.alert('Validation Error', 'Valid Until date is required.');
+        return;
+      }
+
+      const fromDate = new Date(validFrom);
+      const untilDate = new Date(validUntil);
+
+      if (isNaN(fromDate.getTime()) || isNaN(untilDate.getTime())) {
+        Alert.alert('Validation Error', 'Please select valid dates.');
+        return;
+      }
+
+      if (untilDate < fromDate) {
+        Alert.alert('Validation Error', 'Valid Until date cannot be before Valid From date.');
+        return;
+      }
+
+      const method = discount._id ? 'PUT' : 'POST';
+      const endpoint = `${VENUE_ENDPOINT}/venues/${venueId}/discounts`;
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -121,15 +146,13 @@ const DiscountManagementScreen = ({ route }) => {
       Alert.alert('Success', 'Discount saved/updated successfully!');
     } catch (error) {
       console.error('Error saving/updating discount:', error);
-      Alert.alert('Error', 'Could not save/update discount');
+      Alert.alert('Error', error.message || 'Something went wrong.');
     }
   };
 
-  // Delete the discount
   const deleteDiscount = async () => {
     try {
       const accessToken = await AsyncStorage.getItem('accessToken');
-
       if (!accessToken) {
         Alert.alert('Error', 'You need to be logged in');
         return;
@@ -170,7 +193,6 @@ const DiscountManagementScreen = ({ route }) => {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Manage Discount</Text>
 
-      {/* Discount Percentage */}
       <TextInput
         style={styles.input}
         placeholder="Discount Percentage"
@@ -179,21 +201,22 @@ const DiscountManagementScreen = ({ route }) => {
         keyboardType="numeric"
       />
 
-      {/* Valid From Date Picker */}
       <TouchableOpacity style={styles.dateButton} onPress={() => showDatePicker('validFrom')}>
         <Text style={styles.dateText}>
-          {discount.validFrom ? `From: ${discount.validFrom}` : 'Select Valid From Date'}
+          {discount.validFrom
+            ? `From: ${moment(discount.validFrom).format('YYYY-MM-DD')}`
+            : 'Select Valid From Date'}
         </Text>
       </TouchableOpacity>
 
-      {/* Valid Until Date Picker */}
       <TouchableOpacity style={styles.dateButton} onPress={() => showDatePicker('validUntil')}>
         <Text style={styles.dateText}>
-          {discount.validUntil ? `Until: ${discount.validUntil}` : 'Select Valid Until Date'}
+          {discount.validUntil
+            ? `Until: ${moment(discount.validUntil).format('YYYY-MM-DD')}`
+            : 'Select Valid Until Date'}
         </Text>
       </TouchableOpacity>
 
-      {/* Description */}
       <TextInput
         style={styles.input}
         placeholder="Description"
@@ -201,21 +224,25 @@ const DiscountManagementScreen = ({ route }) => {
         onChangeText={(text) => setDiscount({ ...discount, description: text })}
       />
 
-      {/* Save Button */}
-      <TouchableOpacity style={styles.saveButton} onPress={saveOrUpdateDiscount}>
-        <Text style={styles.saveButtonText}>
-          {discount._id ? 'Update Discount' : 'Save Discount'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Delete Button */}
+      {/* Save/Delete Button Row */}
       {discount._id && (
-        <TouchableOpacity style={styles.deleteButton} onPress={deleteDiscount}>
-          <Text style={styles.deleteButtonText}>Delete Discount</Text>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={[styles.actionButton, styles.saveButton]} onPress={saveOrUpdateDiscount}>
+            <Text style={styles.buttonText}>Update</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={deleteDiscount}>
+            <Text style={styles.buttonText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!discount._id && (
+        <TouchableOpacity style={styles.saveButtonFull} onPress={saveOrUpdateDiscount}>
+          <Text style={styles.buttonText}>Save Discount</Text>
         </TouchableOpacity>
       )}
 
-      {/* Date Picker Modal */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="date"
@@ -229,66 +256,71 @@ const DiscountManagementScreen = ({ route }) => {
 
 export default DiscountManagementScreen;
 
-// Styles
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 16,
+    padding: 24,
     backgroundColor: '#f1fdf3',
+    justifyContent: 'flex-start',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 24,
+    color: '#1a1a1a',
+    textAlign: 'left',
   },
   input: {
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 10,
+    borderColor: '#b0c9b4',
+    borderRadius: 4,
+    padding: 14,
+    marginBottom: 16,
     fontSize: 16,
+    color: '#333',
   },
   dateButton: {
-    backgroundColor: '#ffffff',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    backgroundColor: '#fff',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    borderColor: '#b0c9b4',
     borderWidth: 1,
-    borderColor: '#dcdcdc',
+    marginBottom: 16,
   },
   dateText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: 'black',
+    color: '#222',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 12,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 6,
+    alignItems: 'center',
   },
   saveButton: {
-    backgroundColor: '#29B6F6',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    backgroundColor: '#4CAF50',
   },
   deleteButton: {
-    backgroundColor: 'red',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
+    backgroundColor: '#e53935',
   },
-  deleteButtonText: {
+  saveButtonFull: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  buttonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '600',
   },
 });
-
-
-
-

@@ -46,8 +46,7 @@ const VenuePeakHoursChart = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-       <Text style={styles.title}>📊 Peak Booking Hours
-       Peak Booking Hours (All Venues)
+       <Text style={styles.title}>📊 Peak Booking Hours(All Venues)
       </Text>
      
       <BarChart

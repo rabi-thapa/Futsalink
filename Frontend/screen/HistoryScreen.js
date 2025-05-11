@@ -1,73 +1,90 @@
-//Frontend/screen/HistoryScreen.js
-
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   SafeAreaView,
   Image,
-  TextInput,
-  Pressable,
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import VenueCard from '../components/VenueCard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 const HistoryScreen = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserBookings = async () => {
-    try {
-      const token = await AsyncStorage.getItem('accessToken');
-      console.log('Token:', token);
-  
-      const response = await fetch('http://10.0.2.2:3000/api/bookings/my-bookings', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      const data = await response.json(); 
-      console.log('Parsed bookings data:', data);
-  
-      if (response.ok) {
-        const transformed = data.bookings
-          .filter(booking => booking.venue)
-          .map(booking => ({
-            id: booking._id,
-            name: booking.venue?.venueName || 'Unknown Venue',
-            image: booking.venue?.venueImage
-              ? `http://10.0.2.2:3000/${booking.venue.venueImage}`
-              : 'https://via.placeholder.com/150',
-            address: booking.venue?.location?.locationName || 'Unknown Location',
-            location: booking.venue?.location?.locationName || 'Unknown Location',
-            rating: 4,
-            timings: `${booking.startTime} - ${booking.endTime}`,
-            sportsAvailable: [],
-            bookings: booking,
-          }));
-  
-        setBookings(transformed);
-      } else {
-        console.error('Failed to fetch bookings:', data.message);
-      }
-    } catch (err) {
-      console.error('Error fetching bookings:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const controller = new AbortController();
 
-  useEffect(() => {
-    fetchUserBookings();
-  }, []);
+      const fetchUserBookings = async () => {
+        try {
+          const token = await AsyncStorage.getItem('accessToken');
+          if (!token) {
+            console.error('Access token is missing');
+            return;
+          }
+
+          const response = await fetch('http://10.0.2.2:3000/api/bookings/my-bookings', {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (isActive && data.bookings) {
+            const transformed = data.bookings
+              .filter(booking => booking.venue)
+              .map(booking => ({
+                id: booking._id,
+                name: booking.venue?.venueName || 'Unknown Venue',
+                image: booking.venue?.venueImage
+                  ? `http://10.0.2.2:3000/${booking.venue.venueImage}`
+                  : 'https://via.placeholder.com/150',
+                address: booking.venue?.location?.locationName || 'Unknown Location',
+                location: booking.venue?.location?.locationName || 'Unknown Location',
+                rating: 4,
+                timings: `${booking.startTime} - ${booking.endTime}`,
+                sportsAvailable: [],
+                bookings: booking,
+              }));
+
+            setBookings(transformed);
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            console.log('Fetch aborted');
+          } else {
+            console.error('Error fetching bookings:', err);
+          }
+        } finally {
+          if (isActive) {
+            setLoading(false);
+          }
+        }
+      };
+
+      fetchUserBookings();
+
+      return () => {
+        isActive = false;
+        controller.abort();
+      };
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -89,26 +106,14 @@ const HistoryScreen = () => {
         </View>
       </View>
 
-      {/* <Pressable style={styles.filterContainer}>
-        <View style={styles.filterBox}>
-          <Text>Sports & Availability</Text>
-        </View>
-        <View style={styles.filterBox}>
-          <Text>Favorites</Text>
-        </View>
-        <View style={styles.filterBox}>
-          <Text>Offers</Text>
-        </View>
-      </Pressable> */}
-
       {loading ? (
-        <ActivityIndicator size="large" color="#000" style={{marginTop: 20}} />
+        <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
       ) : bookings.length === 0 ? (
         <Text style={styles.noBookingsText}>No bookings available</Text>
       ) : (
         <FlatList
           data={bookings}
-          renderItem={({item}) => <VenueCard item={item} />}
+          renderItem={({ item }) => <VenueCard item={item} />}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.flatListContent}
           showsVerticalScrollIndicator={false}
@@ -145,17 +150,6 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  filterBox: {
-    padding: 10,
-    borderRadius: 10,
-    borderColor: '#e0e0e0',
-    borderWidth: 1,
   },
   flatListContent: {
     paddingBottom: 20,

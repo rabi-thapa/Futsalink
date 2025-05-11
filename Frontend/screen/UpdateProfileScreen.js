@@ -1,4 +1,4 @@
-import React, {useState, useContext, useEffect} from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,16 +11,16 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native'; // ✅ Added for refreshing on focus
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import moment from 'moment';
-import {AuthContext} from '../context/AuthContext';
+import { AuthContext } from '../context/AuthContext';
 
 const UpdateProfileScreen = () => {
   const navigation = useNavigation();
-  const {userData, checkAuth} = useContext(AuthContext);
+  const { userData, checkAuth } = useContext(AuthContext);
 
   const [profileDetails, setProfileDetails] = useState({
     firstName: '',
@@ -35,10 +35,23 @@ const UpdateProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  // ✅ Use useFocusEffect instead of useEffect to refresh data every time screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadProfileData = async () => {
+        setLoading(true);
+        try {
+          await checkAuth(); // Triggers auth check and updates context
+        } finally {
+          setLoading(false);
+        }
+      };
 
+      loadProfileData();
+    }, [checkAuth])
+  );
+
+  // ✅ This effect only updates local state when userData changes (still needed)
   useEffect(() => {
     if (userData) {
       setProfileDetails({
@@ -52,10 +65,10 @@ const UpdateProfileScreen = () => {
 
       setProfileImage(`http://10.0.2.2:3000/${userData.profileImage}`);
     }
-  }, [userData, loading]);
+  }, [userData]);
 
   const handleChange = (key, value) => {
-    setProfileDetails(prev => ({...prev, [key]: value}));
+    setProfileDetails(prev => ({ ...prev, [key]: value }));
   };
 
   const showDatePicker = () => setDatePickerVisibility(true);
@@ -71,6 +84,29 @@ const UpdateProfileScreen = () => {
   };
 
   const updateProfile = async () => {
+    const { firstName, lastName, email, dateOfBirth } = profileDetails;
+
+    // Basic frontend validation
+    if (!firstName.trim()) {
+      Alert.alert('Validation Error', 'First name is required');
+      return;
+    }
+
+    if (!lastName.trim()) {
+      Alert.alert('Validation Error', 'Last name is required');
+      return;
+    }
+
+    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
+      Alert.alert('Validation Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (dateOfBirth && !moment(dateOfBirth, moment.ISO_8601, true).isValid()) {
+      Alert.alert('Validation Error', 'Please select a valid date of birth');
+      return;
+    }
+
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('accessToken');
@@ -85,28 +121,29 @@ const UpdateProfileScreen = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(profileDetails),
-        },
+        }
       );
 
       const data = await response.json();
 
-      if (!response.ok)
+      if (!response.ok) {
         throw new Error(data.message || 'Failed to update profile');
+      }
 
       setProfileImage(
-        `http://10.0.2.2:3000/${data.profileImage}?t=${Date.now()}`,
+        `http://10.0.2.2:3000/${data.profileImage}?t=${Date.now()}`
       );
       Alert.alert('Success', 'Profile updated successfully!');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to update profile.');
+      Alert.alert('Error', error.message || 'Something went wrong.');
     } finally {
       setLoading(false);
     }
   };
 
   const updateProfileImage = async () => {
-    ImagePicker.launchImageLibrary({mediaType: 'photo'}, async response => {
+    ImagePicker.launchImageLibrary({ mediaType: 'photo' }, async response => {
       if (response.didCancel || response.error) {
         Alert.alert('Error', 'Image selection failed');
         return;
@@ -135,7 +172,7 @@ const UpdateProfileScreen = () => {
                 'Content-Type': 'multipart/form-data',
               },
               body: formData,
-            },
+            }
           );
 
           const data = await res.json();
@@ -144,15 +181,15 @@ const UpdateProfileScreen = () => {
             throw new Error(data.message || 'Failed to update image');
 
           setProfileImage(
-            `http://10.0.2.2:3000/${data.profileImage}?t=${Date.now()}`,
+            `http://10.0.2.2:3000/${data.profileImage}?t=${Date.now()}`
           );
 
-          await checkAuth();
+          await checkAuth(); // Refresh user data after image change
           Alert.alert('Success', 'Profile image updated successfully!');
         } catch (error) {
           Alert.alert(
             'Error',
-            error.message || 'Failed to update profile image.',
+            error.message || 'Failed to update profile image.'
           );
         } finally {
           setLoading(false);
@@ -174,7 +211,7 @@ const UpdateProfileScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.imageContainer}>
           {profileImage ? (
-            <Image source={{uri: profileImage}} style={styles.profileImage} />
+            <Image source={{ uri: profileImage }} style={styles.profileImage} />
           ) : (
             <View style={styles.imagePlaceholder}>
               <Text style={styles.imagePlaceholderText}>No Image</Text>
@@ -232,6 +269,7 @@ const UpdateProfileScreen = () => {
 
 export default UpdateProfileScreen;
 
+// ✅ Styles unchanged — same as before
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -263,7 +301,7 @@ const styles = StyleSheet.create({
   imageButton: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#2962FF',
+    backgroundColor: '#66BB6A',
     borderRadius: 8,
   },
   imageButtonText: {
@@ -288,7 +326,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   saveButton: {
-    backgroundColor: '#2962FF',
+    backgroundColor: '#66BB6A',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',

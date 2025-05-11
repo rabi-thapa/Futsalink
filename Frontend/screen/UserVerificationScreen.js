@@ -41,7 +41,7 @@ const UserVerificationScreen = () => {
       }
       Alert.alert('Success', 'OTP sent successfully');
 
-      navigation.navigate('OtpVerification', {email, role});
+      navigation.navigate('OtpVerification', {email});
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
