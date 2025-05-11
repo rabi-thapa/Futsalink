@@ -13,7 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const CancelBookingScreen = ({ route, navigation }) => {
   const { bookingId, venueName } = route.params || {};
 
-  console.log("Received bookingId:", bookingId); // ✅ Log it here
+  
     const [loading, setLoading] = useState(false);
 
     const handleCancelBooking = async () => {
@@ -26,13 +26,13 @@ const CancelBookingScreen = ({ route, navigation }) => {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ bookingId }), // Make sure to pass correct bookingId
+                body: JSON.stringify({ bookingId }), 
             });
 
             const result = await response.json();
             if (response.ok) {
                 alert("Booking canceled successfully");
-                navigation.navigate('History'); // Go back to booking history
+                navigation.navigate('History'); 
             } else {
                 alert(result.message || "Failed to cancel booking");
             }

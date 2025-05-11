@@ -8,17 +8,13 @@ const MapScreen = () => {
   const mapView = useRef(null);
   const venues = route.params?.venues || [];
 
-  /**
-   * Open Google Maps with the given venue's coordinates.
-   * @param {Object} venue - The venue object containing location data.
-   */
+  
   const openGoogleMaps = (venue) => {
     if (!venue.location?.latitude || !venue.location?.longitude) {
       alert('Location data is missing for this venue.');
       return;
     }
 
-    // Create a Google Maps URL with coordinates
     const url = `https://www.google.com/maps?q=${venue.location.latitude},${venue.location.longitude}`;
     Linking.openURL(url).catch((err) =>
       console.error('Failed to open Google Maps:', err)
@@ -59,7 +55,7 @@ const MapScreen = () => {
             }}
             onPress={() => openGoogleMaps(venue)} // Redirect to Google Maps on marker press
           >
-            {/* Optional: Add a custom marker icon */}
+           
             <View style={styles.marker}>
               <Text style={styles.markerText}>{venue.venueName.charAt(0)}</Text>
             </View>
@@ -67,7 +63,7 @@ const MapScreen = () => {
         ))}
       </MapView>
 
-      {/* Optional: Add a button to view all venues on Google Maps */}
+      
       {venues.length > 0 && (
         <TouchableOpacity
           style={styles.googleMapsButton}

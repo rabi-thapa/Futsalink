@@ -7,12 +7,14 @@ const moment = require('moment');
 const nodemailer = require('nodemailer');
 
 
-
+// Function to generate new access and refresh tokens for a user
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         console.log("Generating tokens for userId: ", userId);
         const user = await User.findById(userId);
 
+
+         // Generate access and refresh tokens using model methods
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();
 
@@ -20,7 +22,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
         console.log("generated refreshToken", refreshToken);
 
         user.refreshToken = refreshToken;
-        await user.save({ validateBeforeSave: false });
+        await user.save({ validateBeforeSave: false }); // Save refresh token
 
         return { accessToken, refreshToken };
     } catch (error) {
@@ -32,6 +34,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 
+// Get current authenticated user
 const getCurrentUser = asyncHandler(async (req, res) => {
     try {
         const user = await User.findById(req.user._id).select("-password");
@@ -60,10 +63,10 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     }
 });
 
-
+// Register new user
 const signupUser = async (req, res) => {
     try {
-        console.log("Received Signup Request:", req.body);
+ 
 
         const {
             firstName,
@@ -72,21 +75,25 @@ const signupUser = async (req, res) => {
             password,
         } = req.body;
 
+        // Validate required fields
         if (![firstName, email, password].every(field => field && String(field).trim())) {
             throw new ApiError(400, "All fields are required");
         }
 
+          // Check for duplicate user
         const existedUser = await User.findOne({ email });
 
         if (existedUser) {
             throw new ApiError(400, "User with this email already exists");
         }
 
+         // Use default profile image if none uploaded
         const defaultImagePath = 'uploads/default-profile.png';
         const profileImagePath = req.file
             ? `uploads/${req.file.filename}`
             : defaultImagePath;
 
+                // Create user
         const user = await User.create({
             firstName,
             role,
@@ -103,6 +110,8 @@ const signupUser = async (req, res) => {
             );
         }
 
+
+           // Generate tokens
         const { accessToken, refreshToken } =
             await generateAccessAndRefreshTokens(user._id);
 
@@ -122,7 +131,7 @@ const signupUser = async (req, res) => {
 };
 
 
-
+// Change the user's current password
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
@@ -161,19 +170,20 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
 
 
+// Initial sign-in logic to verify credentials
 const proceedSignIn = asyncHandler(async (req, res) => {
     const { email, password, role } = req.body;
   
-    console.log("req.body", req.body);
+    
   
-    // Validate inputs
+
     if (!email || !password || !role) {
       return res.status(400).json({
         message: "Email, password, and role are required.",
       });
     }
   
-    // Find user with matching email and role
+
     const user = await User.findOne({ email, role });
   
     if (!user) {
@@ -196,11 +206,13 @@ const proceedSignIn = asyncHandler(async (req, res) => {
     });
   });
   
-  
-  
+
+  // Store OTPs temporarily in memory
 const otpStore = {};
 
 
+
+// Set up email transporter for sending OTP
 const transporter = nodemailer.createTransport({
   service: 'Gmail',
   auth: {
@@ -210,6 +222,8 @@ const transporter = nodemailer.createTransport({
 });
 
 
+
+// Send OTP to user's email
 const sendOtp = asyncHandler(async (req, res) => {
     const { email } = req.body;
   
@@ -239,91 +253,27 @@ const sendOtp = asyncHandler(async (req, res) => {
 
 
 
-// const sendOtp = asyncHandler(async (req, res) => {
-//   const { email } = req.body;
-
-//   console.log(email)
-//   if (!email) {
-//     throw new ApiError(400, "Email is required");
-//   }
-
-//   console.log("send OTP function trigger")
-//   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit OTP
-//   otpStore[email] = otp; // Store OTP temporarily
-
-//   // Send OTP via email
-//   const mailOptions = {
-//     from: process.env.EMAIL_USER,
-//     to: email,
-//     subject: 'Your OTP for Verification',
-//     text: `Your OTP is ${otp}. Please do not share it with anyone.`,
-//   };
-
-//   console.log(mailOptions);
-  
-//   await transporter.sendMail(mailOptions);
-
-//   return res.status(200).json({ message: "OTP sent successfully" });
-// });
-
-// Verify OTP
-// const verifyOtp = asyncHandler(async (req, res) => {
-//   const { email, otp } = req.body;
-//   if (!email || !otp) {
-//     throw new ApiError(400, "Email and OTP are required");
-//   }
-//   const storedOtp = otpStore[email] || "1234";
-//   if (!storedOtp || storedOtp !== otp) {
-//     throw new ApiError(400, "Invalid OTP");
-//   }
-//   delete otpStore[email]; // Clear OTP after successful verification
-
-//   // Fetch user details
-//   const user = await User.findOne({ email });
-//   if (!user) {
-//     throw new ApiError(404, "User not found");
-//   }
-
-//   // Generate tokens
-//   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-//   return res.status(200).json({
-//     message: "OTP verified successfully",
-//     accessToken,
-//     refreshToken,
-//     userId: user._id,
-//     userRole: user.role,
-//   });
-// });
 
 
+// Verify the OTP sent to user's email
 const verifyOtp = asyncHandler(async (req, res) => {
     const { email, otp } = req.body;
   
-    // Validate required fields
     if (!email || !otp) {
       throw new ApiError(400, "Email and OTP are required");
     }
   
-    // Check if the OTP matches the hardcoded value '1234' for quick testing
-    if (otp === "1234") {
-      console.log("Hardcoded OTP verification successful for email:", email);
-    } else {
-      // For non-hardcoded OTPs, check against the stored OTP
-      const storedOtp = otpStore[email];
-      if (!storedOtp || storedOtp !== otp) {
-        return res.status(400).json({ message: "Invalid OTP" });
-      }
-      delete otpStore[email]; // Clear OTP after successful verification
+    const storedOtp = otpStore[email];
+    if (!storedOtp || storedOtp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
     }
+    delete otpStore[email]; // Clear OTP after successful verification
   
-    // Fetch user details
     const user = await User.findOne({ email });
     if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
   
-    // Generate tokens
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
   
     return res.status(200).json({
@@ -334,8 +284,9 @@ const verifyOtp = asyncHandler(async (req, res) => {
       userRole: user.role,
     });
   });
+  
 
-
+  // Sign out the user and clear refresh token
 const signOutUser = asyncHandler(async (req, res) => {
     try {
         if (!req.user) {
@@ -372,6 +323,8 @@ const signOutUser = asyncHandler(async (req, res) => {
     }
 });
 
+
+// Update user's personal account details
 const updateAccountDetails = asyncHandler(async (req, res) => {
     console.log(req.body);
 
@@ -387,17 +340,15 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
             address,
         } = req.body;
 
-        // ✅ Validate firstName: must not be null, undefined, or empty string
+        
         if (!firstName || typeof firstName !== 'string' || firstName.trim() === '') {
             return res.status(400).json({ message: 'First name cannot be empty' });
         }
 
-        // Optional: Validate date of birth format
         if (dateOfBirth && !moment(dateOfBirth, moment.ISO_8601, true).isValid()) {
             return res.status(400).json({ message: 'Invalid date format for dateOfBirth' });
         }
-
-        // ✅ Update only fields that are provided
+d
         const updateData = {
             firstName: firstName.trim(),
             ...(lastName && { lastName: lastName.trim() }),
@@ -427,6 +378,9 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+
+
+// Update user's profile image
 const updateUserProfileImage = asyncHandler(async (req, res) => {
     if (!req.file) {
         throw new ApiError(400, "Profile Image is missing");
@@ -448,7 +402,7 @@ const updateUserProfileImage = asyncHandler(async (req, res) => {
     });
 });
 
-
+// Refresh access token using a valid refresh token
 const refreshAccessToken = asyncHandler(async (req, res) => {
     try {
 
@@ -484,6 +438,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 });
 
+// Export all functions
 module.exports = {
     getCurrentUser,
     signupUser,

@@ -55,18 +55,7 @@ const HomeScreen = () => {
         </View>
       </View>
 
-      {/* <View style={styles.activityContainer}>
-        <View style={styles.activityHeader}>
-          <Text style={styles.activityTitle}>Futsal Activity</Text>
-          <Pressable style={styles.viewButton}>
-            <Button title="VIEW" />
-          </Pressable>
-        </View>
-        <Text style={styles.noGamesText}>You have no Games Today</Text>
-        <Pressable style={styles.calendarButton}>
-          <Text style={styles.calendarText}>View My Calendar</Text>
-        </Pressable>
-      </View>  */}
+    
 
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Deals of the Day</Text>
@@ -136,28 +125,7 @@ const HomeScreen = () => {
                   onError={error =>
                     console.error('Image loading error:', error.nativeEvent)
                   }>
-                  {/* <View style={styles.spotlightOverlay}>
-                    <Text style={styles.spotlightArenaName}>
-                      {venue.venueName}
-                    </Text>
-                    <Text style={styles.spotlightLocation}>
-                      {venue.location?.locationName || 'Unknown Location'}
-                    </Text>
-                    <Text style={styles.spotlightPrice}>
-                      {venue.discountedPrice ? (
-                        <>
-                          <Text style={styles.discountedPrice}>
-                            Rs {venue.discountedPrice}/hour
-                          </Text>
-                          <Text style={styles.originalPrice}>
-                            Rs {venue.pricePerHour}/hour
-                          </Text>
-                        </>
-                      ) : (
-                        <Text>Rs {venue.pricePerHour}/hour</Text>
-                      )}
-                    </Text>
-                  </View> */}
+                 
 
                   <View style={styles.spotlightOverlay}>
                     <View>
@@ -208,20 +176,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#d5d8dc',
   },
-  // headerLeftText: {
-  //   marginLeft: 15,
-  // },
-  // headerRightContainer: {
-  //   flexDirection: 'row',
-  //   alignItems: 'center',
-  //   gap: 10,
-  //   marginRight: 15,
-  // },
-  // profileImage: {
-  //   width: 30,
-  //   height: 30,
-  //   borderRadius: 15,
-  // },
 
   findGroundContainer: {
     padding: 8,
@@ -365,7 +319,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: '#000', // fallback if image fails
+    backgroundColor: '#000',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.5,

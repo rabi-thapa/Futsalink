@@ -57,14 +57,14 @@ const OtpVerificationScreen = () => {
       await AsyncStorage.setItem('userId', data.userId);
       await AsyncStorage.setItem('userRole', data.userRole);
 
-       // Navigate based on role
+      
       if (data.userRole === 'customer') {
         navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else if (data.userRole === 'vendor') {
         navigation.reset({ index: 0, routes: [{ name: 'VendorStack' }] });
       }
     } catch (error) {
-     // Show alert for wrong OTP or other errors
+    
      Alert.alert('OTP Error', error.message || 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
@@ -75,7 +75,7 @@ const OtpVerificationScreen = () => {
     <Background>
       <Logo />
       <Header>OTP Verification</Header>
-      {/* <Text style={styles.subtitle}>Enter the OTP sent to {email}</Text> */}
+      
 
       <Paragraph style={styles.subtitle}>
         An OTP will be sent to <Text style={{fontWeight: 'bold'}}>{email}</Text>

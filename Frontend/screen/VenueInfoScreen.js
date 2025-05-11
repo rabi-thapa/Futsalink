@@ -71,9 +71,7 @@ const VenueInfoScreen = () => {
                     <FontAwesome
                       key={i}
                       style={{paddingHorizontal: 3}}
-                      // name={
-                      //   i < Math.floor(route.params.rating) ? 'star' : 'star-o'
-                      // }
+                     
                       size={15}
                       color="#FFD700"
                     />
@@ -97,25 +95,6 @@ const VenueInfoScreen = () => {
 
             <Facilities />
 
-            {/* <View style={{marginHorizontal: 10}}>
-              <Text style={{fontSize: 15, fontWeight: 'bold'}}>Activities</Text>
-              <Pressable
-                style={{
-                  borderColor: '#787878',
-                  marginTop: 10,
-                  borderWidth: 1,
-                  padding: 10,
-                  justifyContent: 'center',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  borderRadius: 5,
-                }}>
-                <AntDesign name="plus" size={24} color="black" />
-
-                <Text>Create Activity </Text>
-              </Pressable>
-            </View> */}
 
             <Pressable
               style={{

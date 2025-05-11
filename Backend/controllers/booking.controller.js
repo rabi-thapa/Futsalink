@@ -1,5 +1,6 @@
 //Backend/controller/booking.controller.js
 
+// Import models
 const Venue = require("../models/venue.model"); // Register the Venue model
 const Booking = require("../models/booking.model");
 const Payment = require("../models/booking.model");
@@ -8,94 +9,91 @@ const User = require("../models/user.model");
 const asyncHandler = require("../utils/asyncHandler");
 
 const createBooking = asyncHandler(async (req, res) => {
-  try {
-    const { venue, date, startTime, endTime } = req.body; // Expecting `venue` from the frontend
-    const user = req.user._id;
+    try {
+        const { venue, date, startTime, endTime } = req.body; // Expecting `venue` from the frontend
+        const user = req.user._id;
 
-    console.log('Received venue:', venue); // Debugging log
+        // Ensure required fields are present
+        if (!venue || !date || !startTime || !endTime) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
 
-    // Validate required fields
-    if (!venue || !date || !startTime || !endTime) {
-      return res.status(400).json({ message: "All fields are required" });
+        // Validate and parse date
+        const parsedDate = new Date(date);
+        if (isNaN(parsedDate)) {
+            return res.status(400).json({ message: "Invalid date format" });
+        }
+
+        // Fetch venue details
+        const venueDetails = await Venue.findById(venue);
+        if (!venueDetails) {
+            return res.status(404).json({ message: "Venue not found" });
+        }
+
+        const existingBooking = await Booking.findOne({
+            venue: venue,
+            date: parsedDate,
+            $or: [
+                {
+                    startTime: { $lt: endTime },
+                    endTime: { $gt: startTime },
+                },
+            ],
+        });
+
+        if (existingBooking) {
+            return res.status(400).json({
+                message:
+                    "Booking not available for this time slot. Please choose another time.",
+            });
+        }
+
+        // Calculate total hours and base price
+        const hoursBooked =
+            (new Date(`1970-01-01T${endTime}`) -
+                new Date(`1970-01-01T${startTime}`)) /
+            (1000 * 60 * 60);
+        let totalPrice = venueDetails.pricePerHour * hoursBooked;
+
+        // Apply discount if valid
+        let discountedPrice = null;
+        if (venueDetails.discount) {
+            const { discountPercentage, validFrom, validUntil } =
+                venueDetails.discount;
+            const currentDate = new Date();
+            if (
+                currentDate >= new Date(validFrom) &&
+                currentDate <= new Date(validUntil)
+            ) {
+                discountedPrice =
+                    totalPrice - (totalPrice * discountPercentage) / 100;
+                discountedPrice = parseFloat(discountedPrice.toFixed(2)); // Round to 2 decimal places
+            }
+        }
+
+        // Use discounted price if available, otherwise use original price
+        const finalPrice = discountedPrice || totalPrice;
+
+        // Create and save the booking
+        const booking = new Booking({
+            user,
+            venue: venueDetails._id,
+            date: parsedDate,
+            startTime,
+            endTime,
+            status: "pending",
+            paymentStatus: "pending",
+            totalPrice: finalPrice,
+        });
+
+        const savedBooking = await booking.save();
+
+        res.status(201).json(savedBooking);
+    } catch (error) {
+        console.error("Error creating booking:", error);
+        res.status(500).json({ message: "Server error" });
     }
-
-    // Parse date
-    const parsedDate = new Date(date);
-    if (isNaN(parsedDate)) {
-      return res.status(400).json({ message: "Invalid date format" });
-    }
-
-    // Fetch venue details using the `venue` field (assuming it contains the venue ID)
-    const venueDetails = await Venue.findById(venue); // Use `venue` directly as the venue ID
-    if (!venueDetails) {
-      return res.status(404).json({ message: "Venue not found" });
-    }
-
-    // Check if booking already exists for the same time slot
-    const existingBooking = await Booking.findOne({
-      venue: venue, // Use `venue` directly as the venue ID
-      date: parsedDate,
-      $or: [
-        {
-          startTime: { $lt: endTime },
-          endTime: { $gt: startTime },
-        },
-      ],
-    });
-
-    if (existingBooking) {
-      return res.status(400).json({
-        message:
-          "Booking not available for this time slot. Please choose another time.",
-      });
-    }
-
-    // Calculate original price
-    const hoursBooked =
-      (new Date(`1970-01-01T${endTime}`) - new Date(`1970-01-01T${startTime}`)) /
-      (1000 * 60 * 60);
-    let totalPrice = venueDetails.pricePerHour * hoursBooked;
-
-    // Check if a valid discount exists
-    let discountedPrice = null;
-    if (venueDetails.discount) {
-      const { discountPercentage, validFrom, validUntil } = venueDetails.discount;
-      const currentDate = new Date();
-      if (
-        currentDate >= new Date(validFrom) &&
-        currentDate <= new Date(validUntil)
-      ) {
-        discountedPrice = totalPrice - (totalPrice * discountPercentage) / 100;
-        discountedPrice = parseFloat(discountedPrice.toFixed(2)); // Round to 2 decimal places
-      }
-    }
-
-    // Use discounted price if available, otherwise use original price
-    const finalPrice = discountedPrice || totalPrice;
-
-    // Create a new booking
-    const booking = new Booking({
-      user,
-      venue: venueDetails._id, // Save the venue ID in the database
-      date: parsedDate,
-      startTime,
-      endTime,
-      status: "pending",
-      paymentStatus: "pending",
-      totalPrice: finalPrice, // Save the final price
-    });
-
-    const savedBooking = await booking.save();
-
-    // Respond with the booking details
-    res.status(201).json(savedBooking);
-  } catch (error) {
-    console.error("Error creating booking:", error);
-    res.status(500).json({ message: "Server error" });
-  }
 });
-
-
 
 const getUserBookings = asyncHandler(async (req, res) => {
     const user = req.user._id;
@@ -117,14 +115,15 @@ const getUserBookings = asyncHandler(async (req, res) => {
     });
 });
 
+// Get all venue IDs for the vendor
 const getVendorOrders = asyncHandler(async (req, res) => {
     const vendorId = req.user._id;
 
-    // Fetch all venues owned by the vendor
+    // Get all venue IDs for the vendor
     const venues = await Venue.find({ vendorId: vendorId }).select("_id");
     const venueIds = venues.map((v) => v._id);
 
-    // Fetch all bookings for the vendor's venues
+    // Find bookings associated with vendor's venues
     const bookings = await Booking.find({ venue: { $in: venueIds } })
         .populate({
             path: "user",
@@ -136,14 +135,13 @@ const getVendorOrders = asyncHandler(async (req, res) => {
         })
         .sort({ createdAt: -1 });
 
-    // Fetch payment details for each booking
+    // Attach payment and duration info to each booking
     const enrichedBookings = await Promise.all(
         bookings.map(async (booking) => {
             const payment = await Payment.findOne({
                 booking: booking._id,
             }).select("method status amount currency paidAt");
 
-            // Calculate booking duration
             const start = new Date(`1970-01-01T${booking.startTime}:00`);
             const end = new Date(`1970-01-01T${booking.endTime}:00`);
             const durationInMilliseconds = end - start;
@@ -152,7 +150,7 @@ const getVendorOrders = asyncHandler(async (req, res) => {
             return {
                 ...booking.toObject(),
                 paymentDetails: payment || null,
-                durationInHours: durationInHours.toFixed(2), // Add duration in hours
+                durationInHours: durationInHours.toFixed(2),
             };
         })
     );
@@ -174,13 +172,13 @@ const getBookedSlots = asyncHandler(async (req, res) => {
                 .json({ message: "Venue ID and date are required" });
         }
 
-        // Fetch booked slots for the given venue and date
+        // Fetch booked time slots for venue and date
         const bookedSlots = await Booking.find(
             { venue, date },
             { startTime: 1, endTime: 1, _id: 0 } // Only return start and end times
         );
 
-        // Format the response
+          // Format response to include only start and end times
         const formattedBookedSlots = bookedSlots.map((slot) => ({
             startTime: slot.startTime,
             endTime: slot.endTime,
@@ -196,54 +194,34 @@ const getBookedSlots = asyncHandler(async (req, res) => {
     }
 });
 
-
 const cancelBooking = asyncHandler(async (req, res) => {
-  console.log("1. Entering cancelBooking function");
-
   const { bookingId } = req.body;
 
+  // Validate booking ID
   if (!bookingId) {
-    console.error("2. Booking ID is missing in request body");
     return res.status(400).json({ message: "Booking ID is required" });
   }
-
-  console.log("3. Received bookingId:", bookingId);
 
   // Find the booking
   const booking = await Booking.findById(bookingId);
   if (!booking) {
-    console.error("4. Booking not found for ID:", bookingId);
     return res.status(404).json({ message: "Booking not found" });
   }
 
-  console.log("5. Found booking:", booking._id);
-
-  // Optional: Check if already canceled
+  // Check if already canceled
   if (booking.paymentStatus === "cancelled") {
-    console.warn("6. Booking is already canceled:", bookingId);
     return res.status(400).json({ message: "Booking already canceled" });
   }
 
-  console.log("7. Proceeding to cancel the booking...");
-
-  // Soft delete: Mark as canceled
+  // Update booking status to 'cancelled'
   booking.paymentStatus = "cancelled";
   await booking.save();
-  console.log("8. Booking status updated to 'canceled':", bookingId);
 
-  // Optional: Update related payment record
-  const paymentUpdateResult = await Payment.findOneAndUpdate(
+  // Update associated payment status if exists
+  await Payment.findOneAndUpdate(
     { booking: bookingId },
     { status: "cancelled" }
   );
-
-  if (paymentUpdateResult) {
-    console.log("9. Payment status updated to 'cancelled' for booking:", bookingId);
-  } else {
-    console.warn("10. No payment found for booking:", bookingId);
-  }
-
-  console.log("11. Successfully completed cancellation process for booking:", bookingId);
 
   res.status(200).json({
     message: "Booking canceled successfully",
@@ -251,10 +229,13 @@ const cancelBooking = asyncHandler(async (req, res) => {
   });
 });
 
+
+// Export all booking controller functions
+
 module.exports = {
     createBooking,
     getUserBookings,
     getVendorOrders,
     getBookedSlots,
-    cancelBooking
+    cancelBooking,
 };

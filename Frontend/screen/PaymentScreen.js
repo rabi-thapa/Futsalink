@@ -24,8 +24,8 @@ const PaymentScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { venue, date, startTime, endTime, bookingId } = route.params || {};
-  const [showKhaltiModal, setShowKhaltiModal] = useState(false); // State for Khalti modal
-  const [showPayPalModal, setShowPayPalModal] = useState(false); // State for PayPal modal
+  const [showKhaltiModal, setShowKhaltiModal] = useState(false); 
+  const [showPayPalModal, setShowPayPalModal] = useState(false); 
   const [status, setStatus] = useState('Pending');
   const [payPalUrl, setPayPalUrl] = useState(null);
   const [paymentUrl, setPaymentUrl] = useState(null);
@@ -57,7 +57,7 @@ const PaymentScreen = () => {
       const paymentData = await paymentRes.json();
       if (paymentData.approvalUrl) {
         setPayPalUrl(paymentData.approvalUrl);
-        setShowPayPalModal(true); // Show PayPal modal
+        setShowPayPalModal(true); 
       } else {
         alert('Failed to get PayPal URL');
       }

@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native'; // ✅ Added for refreshing on focus
+import { useNavigation, useFocusEffect } from '@react-navigation/native'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'react-native-image-picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -35,13 +35,13 @@ const UpdateProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
-  // ✅ Use useFocusEffect instead of useEffect to refresh data every time screen is focused
+
   useFocusEffect(
     React.useCallback(() => {
       const loadProfileData = async () => {
         setLoading(true);
         try {
-          await checkAuth(); // Triggers auth check and updates context
+          await checkAuth(); 
         } finally {
           setLoading(false);
         }
@@ -51,7 +51,7 @@ const UpdateProfileScreen = () => {
     }, [checkAuth])
   );
 
-  // ✅ This effect only updates local state when userData changes (still needed)
+
   useEffect(() => {
     if (userData) {
       setProfileDetails({
@@ -86,7 +86,7 @@ const UpdateProfileScreen = () => {
   const updateProfile = async () => {
     const { firstName, lastName, email, dateOfBirth } = profileDetails;
 
-    // Basic frontend validation
+  
     if (!firstName.trim()) {
       Alert.alert('Validation Error', 'First name is required');
       return;
@@ -184,7 +184,7 @@ const UpdateProfileScreen = () => {
             `http://10.0.2.2:3000/${data.profileImage}?t=${Date.now()}`
           );
 
-          await checkAuth(); // Refresh user data after image change
+          await checkAuth(); 
           Alert.alert('Success', 'Profile image updated successfully!');
         } catch (error) {
           Alert.alert(
@@ -269,7 +269,7 @@ const UpdateProfileScreen = () => {
 
 export default UpdateProfileScreen;
 
-// ✅ Styles unchanged — same as before
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

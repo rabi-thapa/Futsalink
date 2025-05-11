@@ -45,13 +45,13 @@ const SignUpScreen = ({navigation}) => {
     const emailError = emailValidator(email.value);
     const passwordError = passwordValidator(password.value);
 
-   // Set errors back to state
+   
    setEmail({...email, error: emailError});
    setPassword({...password, error: passwordError});
 
-   // Check for missing fields
+   
    if (firstNameError || emailError || passwordError) {
-     return; // Stop submission
+     return;
    }
 
    if (!role) {

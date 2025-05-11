@@ -1,3 +1,5 @@
+
+// Importing required models and utilities
 const Venue = require("../models/venue.model");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
@@ -9,6 +11,7 @@ const Payment= require("../models/payment.model")
 const mongoose = require("mongoose");
 
 
+// Utility function to calculate discounted price
 const calculateDiscountedPrice = (price, discount) => {
   if (!discount || !discount.discountPercentage) return null;
   const currentDate = new Date();
@@ -26,6 +29,7 @@ const calculateDiscountedPrice = (price, discount) => {
 
 
 
+// Get a single venue by ID, including average rating and discount
 const getVenueById = asyncHandler(async (req, res) => {
   try {
     const venueId = req.params.venueId;
@@ -57,7 +61,6 @@ const getVenueById = asyncHandler(async (req, res) => {
       }
     }
 
-    console.log("get Venue by id");
 
     return res.status(200).json({
       success: true,
@@ -74,13 +77,13 @@ const getVenueById = asyncHandler(async (req, res) => {
   }
 });
 
-
+// Get all venues added by a specific vendor
 const getVendorVenues = asyncHandler(async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
         const vendorId = req.user._id; 
 
-        // console.log("Vendor ID:", req.user._id);
+
 
 
         if (!vendorId) {
@@ -113,7 +116,7 @@ const getVendorVenues = asyncHandler(async (req, res) => {
 
 
   
-
+// Get all venues with optional filters and sorting
 const getAllVenues = asyncHandler(async (req, res) => {
   try {
     const { page = 1, limit = 10, location, search = '', sortBy = 'location', sortOrder = 'asc', discounted } = req.query;
@@ -184,7 +187,7 @@ const getAllVenues = asyncHandler(async (req, res) => {
 
 
 
-
+// Add a new venue
   const addVenue = asyncHandler(async (req, res) => {
     const { venueName, location, pricePerHour, openingHours } = req.body;
 
@@ -225,7 +228,7 @@ const getAllVenues = asyncHandler(async (req, res) => {
 
 
 
-
+// Update the image of a venue
 const updateVenueImage = asyncHandler(async (req, res) => {
     // console.log("Request received", req.file, req.body);
 
@@ -259,7 +262,7 @@ const updateVenueImage = asyncHandler(async (req, res) => {
     });
 });
 
-
+// Update venue details like name, price, status, etc.
 const updateVenueDetails = asyncHandler(async (req, res) => {
     try {
       // console.log("req.body: ", req.body);
