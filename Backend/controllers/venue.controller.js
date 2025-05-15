@@ -1,3 +1,5 @@
+//Backend/controller/venue.controller.js
+
 
 // Importing required models and utilities
 const Venue = require("../models/venue.model");
@@ -265,7 +267,7 @@ const updateVenueImage = asyncHandler(async (req, res) => {
 // Update venue details like name, price, status, etc.
 const updateVenueDetails = asyncHandler(async (req, res) => {
     try {
-      // console.log("req.body: ", req.body);
+      console.log("req.body: ", req.body);
   
       const { venueName, location, description, pricePerHour, type, openingHours, status } = req.body;
   
@@ -572,7 +574,7 @@ const listDiscounts = asyncHandler(async (req, res) => {
 
 
 
-const { isValidObjectId } = mongoose.Types; // ✅ Use built-in validator
+
 
 
 

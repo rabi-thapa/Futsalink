@@ -153,10 +153,7 @@ const DiscountManagementScreen = ({ route }) => {
   const deleteDiscount = async () => {
     try {
       const accessToken = await AsyncStorage.getItem('accessToken');
-      if (!accessToken) {
-        Alert.alert('Error', 'You need to be logged in');
-        return;
-      }
+    
 
       const response = await fetch(`${VENUE_ENDPOINT}/venues/${venueId}/discounts`, {
         method: 'DELETE',
@@ -166,6 +163,8 @@ const DiscountManagementScreen = ({ route }) => {
       });
 
       const data = await response.json();
+
+      console.log("delete data",data )
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to delete discount');
@@ -225,7 +224,7 @@ const DiscountManagementScreen = ({ route }) => {
       />
 
       {/* Save/Delete Button Row */}
-      {discount._id && (
+      {discount.discountPercentage && (
         <View style={styles.buttonRow}>
           <TouchableOpacity style={[styles.actionButton, styles.saveButton]} onPress={saveOrUpdateDiscount}>
             <Text style={styles.buttonText}>Update</Text>
@@ -237,7 +236,7 @@ const DiscountManagementScreen = ({ route }) => {
         </View>
       )}
 
-      {!discount._id && (
+      {!discount.discountPercentage && (
         <TouchableOpacity style={styles.saveButtonFull} onPress={saveOrUpdateDiscount}>
           <Text style={styles.buttonText}>Save Discount</Text>
         </TouchableOpacity>

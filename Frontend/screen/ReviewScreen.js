@@ -133,6 +133,11 @@ const ReviewScreen = ({ route, navigation }) => {
 
     const data = await response.json();
 
+    console.log("data", data);
+
+
+
+
     if (response.ok) {
       Alert.alert('Updated', 'Your review has been updated.');
       setModalVisible(false);
@@ -173,36 +178,49 @@ const ReviewScreen = ({ route, navigation }) => {
     return stars;
   };
 
-  const renderReview = ({ item }) => (
-    <View style={styles.reviewCard}>
-      <View style={styles.reviewHeader}>
-        <Image
-          source={{ uri: `http://10.0.2.2:3000/${item.user.profileImage}` }}
-          style={styles.avatar}
-        />
-        <View style={styles.reviewerDetails}>
-          <Text style={styles.reviewerName}>
-            {item.user.firstName} {item.user.lastName}
-          </Text>
-          <View style={styles.ratingContainer}>
-            {renderStarsForDisplay(item.rating)}
+ 
+
+
+  const renderReview = ({ item }) => {
+    // Safely access user or default to empty object
+    const user = item.user || {};
+  
+    return (
+      <View style={styles.reviewCard}>
+        <View style={styles.reviewHeader}>
+          <Image
+            source={
+              user.profileImage
+                ? { uri: `http://10.0.2.2:3000/${user.profileImage}` }
+                : require('../assets/default-user.png') 
+            }
+            style={styles.avatar}
+          />
+          <View style={styles.reviewerDetails}>
+            <Text style={styles.reviewerName}>
+              {user.firstName ? user.firstName : 'Anonymous'} {user.lastName ? user.lastName : ''}
+            </Text>
+            <View style={styles.ratingContainer}>
+              {renderStarsForDisplay(item.rating)}
+            </View>
           </View>
         </View>
+        <Text style={styles.comment}>{item.comment}</Text>
+  
+        {/* Only show actions if user exists and matches userId */}
+        {user._id && user._id === userId && (
+          <View style={styles.actions}>
+            <TouchableOpacity onPress={() => handleDelete(item._id)} style={styles.actionBtn}>
+              <Text style={styles.actionText}>Delete</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleEdit(item)} style={[styles.actionBtn, { backgroundColor: '#2196f3' }]}>
+              <Text style={styles.actionText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-      <Text style={styles.comment}>{item.comment}</Text>
-
-      {item.user._id === userId && (
-        <View style={styles.actions}>
-          <TouchableOpacity onPress={() => handleDelete(item._id)} style={styles.actionBtn}>
-            <Text style={styles.actionText}>Delete</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleEdit(item)} style={[styles.actionBtn, { backgroundColor: '#2196f3' }]}>
-            <Text style={styles.actionText}>Edit</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
+    );
+  };
 
   return (
     <>

@@ -160,12 +160,12 @@ const styles = StyleSheet.create({
   },
   forgot: {
     fontSize: 16,
-    color: 'blue',
+    color: '#2E7D32',
     fontWeight: 'bold',
   },
   link: {
     fontWeight: 'bold',
-    color: 'blue',
+    color: '#2E7D32',
   },
   snackbar: {
     position: 'absolute',

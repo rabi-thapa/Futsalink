@@ -89,22 +89,11 @@ const HistoryScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.locationContainer}>
-          <Text>Shree Nagar</Text>
-          <MaterialIcons name="keyboard-arrow-down" size={24} color="black" />
-        </View>
+  <View style={styles.locationContainer}>
+    <Text style={styles.headerText}>Booking History</Text>
+  </View>
+</View>
 
-        <View style={styles.headerIcons}>
-          <Ionicons name="chatbox-outline" size={24} color="black" />
-          <Ionicons name="notifications-outline" size={24} color="black" />
-          <Image
-            style={styles.profileImage}
-            source={{
-              uri: 'https://lh3.google.com/u/0/ogw/AF2bZygjrlW_ZIJ-BRImu6QyctOAqYdbM2iW0ug4BMC66W3y7Q=s64-c-mo',
-            }}
-          />
-        </View>
-      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
@@ -140,7 +129,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+    fontSize: '18'
   },
+
+  headerText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  
   headerIcons: {
     flexDirection: 'row',
     alignItems: 'center',

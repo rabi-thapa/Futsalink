@@ -22,7 +22,6 @@ const UpdateVenueScreen = ({ route }) => {
   console.log('Venue ID:', venueId);
   const { selectedVenue, fetchVenueById } = useContext(VenueContext);
   const navigation = useNavigation();
-
   const [venueDetails, setVenueDetails] = useState({
     venueName: '',
     location: {
@@ -36,7 +35,6 @@ const UpdateVenueScreen = ({ route }) => {
     openingHours: { open: '', close: '' },
     status: '',
   });
-
   const [venueImage, setVenueImage] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -79,13 +77,26 @@ const UpdateVenueScreen = ({ route }) => {
     });
   };
 
+  // ✅ New Helper Function: Format time to HH:mm
+  const formatTime = (time) => {
+    const [hour, minute] = time.split(":");
+    const formattedHour = hour.padStart(2, "0");
+    const formattedMinute = minute?.padStart(2, "0") || "00"; 
+    return `${formattedHour}:${formattedMinute}`;
+  };
+
   const updateVenue = async () => {
     setLoading(true);
     try {
+      
+      const formattedOpen = formatTime(venueDetails.openingHours.open);
+      const formattedClose = formatTime(venueDetails.openingHours.close);
+
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
         throw new Error('User not authenticated');
       }
+
       const formattedData = {
         ...venueDetails,
         pricePerHour: Number(venueDetails.pricePerHour),
@@ -95,7 +106,12 @@ const UpdateVenueScreen = ({ route }) => {
           latitude: parseFloat(venueDetails.location.latitude),
           longitude: parseFloat(venueDetails.location.longitude),
         },
+        openingHours: {
+          open: formattedOpen,  
+          close: formattedClose,
+        },
       };
+
       const response = await fetch(
         `http://10.0.2.2:3000/api/venue/venueDetails/${venueId}`,
         {
@@ -107,13 +123,16 @@ const UpdateVenueScreen = ({ route }) => {
           body: JSON.stringify(formattedData),
         }
       );
+
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || 'Failed to update venue');
       }
+
       Alert.alert('Success', 'Venue updated successfully!');
       fetchVenueById(venueId);
       navigation.goBack();
+
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to update venue.');
     } finally {
@@ -249,7 +268,8 @@ const UpdateVenueScreen = ({ route }) => {
                     <Picker
                       selectedValue={venueDetails.type || 'indoor'}
                       onValueChange={(itemValue) => handleChange('type', itemValue)}
-                      style={styles.picker}>
+                      style={styles.picker}
+                    >
                       <Picker.Item label="Indoor" value="indoor" />
                       <Picker.Item label="Outdoor" value="outdoor" />
                     </Picker>
@@ -264,7 +284,8 @@ const UpdateVenueScreen = ({ route }) => {
                     <Picker
                       selectedValue={venueDetails.status.toString()}
                       onValueChange={(itemValue) => handleChange('status', itemValue)}
-                      style={styles.picker}>
+                      style={styles.picker}
+                    >
                       <Picker.Item label="Active" value="1" />
                       <Picker.Item label="Not Active" value="0" />
                       <Picker.Item label="Under Maintenance" value="-1" />
@@ -310,9 +331,11 @@ const styles = StyleSheet.create({
   venueImage: { width: 200, height: 150, borderRadius: 10 },
   imageButton: {
     marginTop: 5,
-    backgroundColor: 'blue',
+    backgroundColor: 'green',
     padding: 6,
     borderRadius: 5,
+    padding: 10,
+    margin: 10,
   },
   imageButtonText: { color: 'white', fontSize: 14 },
   formContainer: { marginBottom: 15 },

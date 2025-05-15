@@ -40,7 +40,8 @@ router.get('/:id', getVenueWithReviews);
 
 router.post("/venues/:venueId/discounts", verifyToken, addDiscount);
 router.put("/venues/:venueId/discounts/:discountId", verifyToken, updateDiscount);
-router.delete("/venues/:venueId/discounts/:discountId", verifyToken, deleteDiscount);
+// Delete discount for a venue (no need for discountId)
+router.delete("/venues/:venueId/discounts", verifyToken, deleteDiscount);;
 router.get("/venues/:venueId/discounts", verifyToken, listDiscounts);
 
 

@@ -16,29 +16,25 @@ import Header from '../components/Header';
 import Button from '../components/Button';
 import { theme } from '../core/theme';
 import Paragraph from '../components/Paragraph';
+
 const OtpVerificationScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  const { email} = route.params;
+  const { email } = route.params;
 
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const inputs = useRef([]);
 
-  const handleOtpChange = (text, index) => {
-    const newOtp = [...otp];
-    newOtp[index] = text;
-    setOtp(newOtp);
-
-    if (text && index < 3) {
-      inputs.current[index + 1].focus();
+  const handleOtpChange = (text) => {
+    // Allow only numbers and max length of 4
+    if (/^\d*$/.test(text) && text.length <= 4) {
+      setOtp(text);
     }
   };
 
   const verifyOtp = async () => {
-    const fullOtp = otp.join('');
-    if (fullOtp.length !== 4) {
+    if (otp.length !== 4) {
       Alert.alert('Error', 'Please enter the full OTP');
       return;
     }
@@ -47,7 +43,7 @@ const OtpVerificationScreen = () => {
       const response = await fetch('http://10.0.2.2:3000/api/user/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: fullOtp }),
+        body: JSON.stringify({ email, otp }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'OTP verification failed');
@@ -57,15 +53,15 @@ const OtpVerificationScreen = () => {
       await AsyncStorage.setItem('userId', data.userId);
       await AsyncStorage.setItem('userRole', data.userRole);
 
-      
       if (data.userRole === 'customer') {
         navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
       } else if (data.userRole === 'vendor') {
         navigation.reset({ index: 0, routes: [{ name: 'VendorStack' }] });
       }
+
+      Alert.alert('User Sign In Successfully');
     } catch (error) {
-    
-     Alert.alert('OTP Error', error.message || 'Something went wrong. Try again.');
+      Alert.alert('OTP Error', error.message || 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }
@@ -75,37 +71,28 @@ const OtpVerificationScreen = () => {
     <Background>
       <Logo />
       <Header>OTP Verification</Header>
+
       
 
-      <Paragraph style={styles.subtitle}>
-        An OTP will be sent to <Text style={{fontWeight: 'bold'}}>{email}</Text>
-      </Paragraph>
-
       <View style={styles.otpInputContainer}>
-        {otp.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => (inputs.current[index] = ref)}
-            style={styles.otpInput}
-            value={digit}
-            onChangeText={(text) => handleOtpChange(text, index)}
-            keyboardType="numeric"
-            maxLength={1}
-          />
-        ))}
+        <TextInput
+          style={styles.otpInput}
+          value={otp}
+          onChangeText={handleOtpChange}
+          keyboardType="numeric"
+          maxLength={4}
+          placeholder="Enter OTP"
+          textAlign="center"
+        />
       </View>
 
       <Button
-         style={styles.verifyOtpButton}
-         labelStyle={styles.buttonLabel} 
+        style={styles.verifyOtpButton}
+        labelStyle={styles.buttonLabel}
         onPress={verifyOtp}
         mode="contained"
-        disabled={loading || otp.join('').length !== 4}>
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          'Verify OTP'
-        )}
+        disabled={loading || otp.length !== 4}>
+        {loading ? <ActivityIndicator color="#fff" /> : 'Verify OTP'}
       </Button>
     </Background>
   );
@@ -121,8 +108,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   otpInputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     width: '80%',
     marginBottom: 20,
   },
@@ -130,20 +115,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D0D0D0',
     borderRadius: 5,
-    padding: 10,
-    width: 50,
+    padding: 12,
     height: 50,
     fontSize: 20,
-    textAlign: 'center',
     backgroundColor: theme.colors.surface,
   },
   verifyOtpButton: {
     marginTop: 10,
-    backgroundColor: theme.colors.secondary, 
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 12,
+    backgroundColor: theme.colors.secondary,
   },
 });
