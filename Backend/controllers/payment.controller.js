@@ -10,11 +10,15 @@ const Payment = require("../models/payment.model");
 const Booking = require("../models/booking.model");
 const User = require("../models/user.model");
 
+const { sendBookingConfirmationEmail } = require("../utils/nodemailer");
+
 // Configure PayPal SDK with sandbox credentials
 paypal.configure({
     mode: "sandbox", // Use sandbox for testing
-    client_id: "AUrwEoUMqCYvg4L3Hbj6B9zagPlSF6z_axTcgwbzQZ_PcvxLcWQXpXPBc0ct7FB5LR4OtAClElmKSn_7",
-    client_secret: "EEnr8nnNnSU7n_JD9ZwGq7tH3G_xxM1NCCJLdgQ3vb74_dTaKnO1Pd3gJJYdXyhvW9KshUoDHiHu3agw",
+    client_id:
+        "AUrwEoUMqCYvg4L3Hbj6B9zagPlSF6z_axTcgwbzQZ_PcvxLcWQXpXPBc0ct7FB5LR4OtAClElmKSn_7",
+    client_secret:
+        "EEnr8nnNnSU7n_JD9ZwGq7tH3G_xxM1NCCJLdgQ3vb74_dTaKnO1Pd3gJJYdXyhvW9KshUoDHiHu3agw",
 });
 
 // Controller to initiate payment using Khalti
@@ -27,7 +31,9 @@ const initiateKhaltiPayment = async (req, res) => {
         // Ensure bookingId is provided
         if (!bookingId) {
             console.error("Error: Missing bookingId in request body");
-            return res.status(400).json({ message: "Missing bookingId in request body" });
+            return res
+                .status(400)
+                .json({ message: "Missing bookingId in request body" });
         }
 
         console.log("Booking ID validated successfully:", bookingId);
@@ -48,7 +54,10 @@ const initiateKhaltiPayment = async (req, res) => {
 
         // Ensure total price is valid
         if (!totalPriceInNPR || totalPriceInNPR <= 0) {
-            console.error("Error: Invalid total price. Total Price:", totalPriceInNPR);
+            console.error(
+                "Error: Invalid total price. Total Price:",
+                totalPriceInNPR
+            );
             return res.status(400).json({ message: "Invalid total price" });
         }
 
@@ -70,10 +79,17 @@ const initiateKhaltiPayment = async (req, res) => {
         console.log("Payment Entry Created Successfully:", paymentDetails);
 
         // Check and log the KHALTI secret key
-        console.log("KHALTI_SECRET_KEY from environment variables:", process.env.KHALTI_SECRET_KEY);
+        console.log(
+            "KHALTI_SECRET_KEY from environment variables:",
+            process.env.KHALTI_SECRET_KEY
+        );
         if (!process.env.KHALTI_SECRET_KEY) {
-            console.error("Error: KHALTI_SECRET_KEY is not set in environment variables");
-            return res.status(500).json({ message: "Server misconfiguration: Missing KHALTI_SECRET_KEY" });
+            console.error(
+                "Error: KHALTI_SECRET_KEY is not set in environment variables"
+            );
+            return res.status(500).json({
+                message: "Server misconfiguration: Missing KHALTI_SECRET_KEY",
+            });
         }
 
         // Call Khalti API to initiate payment
@@ -108,30 +124,45 @@ const initiateKhaltiPayment = async (req, res) => {
 
         // Validate response from Khalti
         if (!pidx || !payment_url) {
-            console.error("Error: Missing 'pidx' or 'payment_url' in Khalti API response");
-            return res.status(500).json({ message: "Invalid Khalti API response" });
+            console.error(
+                "Error: Missing 'pidx' or 'payment_url' in Khalti API response"
+            );
+            return res
+                .status(500)
+                .json({ message: "Invalid Khalti API response" });
         }
 
-        console.log("Khalti Payment Initiation Successful:", { pidx, payment_url });
+        console.log("Khalti Payment Initiation Successful:", {
+            pidx,
+            payment_url,
+        });
 
         // Update Payment record with PIDX
         console.log("Updating Payment Entry with PIDX...");
         paymentDetails.gatewayReference = pidx;
         await paymentDetails.save();
-        console.log("Payment Entry Updated Successfully with PIDX:", paymentDetails);
+        console.log(
+            "Payment Entry Updated Successfully with PIDX:",
+            paymentDetails
+        );
 
         // Send payment URL to client
         console.log("Returning payment URL to the client...");
         return res.status(200).json({ pidx, paymentUrl: payment_url });
-
     } catch (error) {
         console.error("Error initiating Khalti payment:", error);
 
         // Axios error handling
         if (error.response) {
             console.error("Axios Error Response Data:", error.response.data);
-            console.error("Axios Error Response Status:", error.response.status);
-            console.error("Axios Error Response Headers:", error.response.headers);
+            console.error(
+                "Axios Error Response Status:",
+                error.response.status
+            );
+            console.error(
+                "Axios Error Response Headers:",
+                error.response.headers
+            );
         } else if (error.request) {
             console.error("Axios Error Request:", error.request);
         } else {
@@ -148,7 +179,9 @@ const handleKhaltiCallback = async (req, res) => {
 
     // Validate PIDX
     if (!pidx) {
-        return res.status(400).json({ message: "Missing PIDX in query parameters" });
+        return res
+            .status(400)
+            .json({ message: "Missing PIDX in query parameters" });
     }
 
     try {
@@ -167,7 +200,9 @@ const handleKhaltiCallback = async (req, res) => {
         const { status, transaction_id } = lookupResponse.data;
 
         if (status === "Completed") {
-            const paymentDetails = await Payment.findOne({ gatewayReference: pidx });
+            const paymentDetails = await Payment.findOne({
+                gatewayReference: pidx,
+            });
 
             if (!paymentDetails) {
                 return res.status(404).json({ message: "Payment not found" });
@@ -190,8 +225,28 @@ const handleKhaltiCallback = async (req, res) => {
             paymentDetails.paidAt = new Date();
             await paymentDetails.save();
 
-            // Could redirect to a success page
-            // return res.redirect("/booking-success");
+            // Get user's email
+            const user = await User.findById(paymentDetails.user);
+            const userEmail = user.email;
+
+            // Get booking details
+            const booking = await Booking.findById(
+                paymentDetails.booking
+            ).populate("venue", "venueName");
+
+            // Prepare booking details for email
+            const bookingDetailsForEmail = {
+                venueName: booking.venue.venueName,
+                date: booking.date,
+                startTime: booking.startTime,
+                endTime: booking.endTime,
+                totalPrice: booking.totalPrice,
+            };
+
+            await sendBookingConfirmationEmail(
+                userEmail,
+                bookingDetailsForEmail
+            );
         } else {
             // Redirect to failure page
             return res.redirect("/booking-failure");
@@ -225,7 +280,9 @@ const handlePaypalPayment = async (req, res) => {
         const totalPriceInUSD = (totalPriceInNPR * NPR_TO_USD_RATE).toFixed(2);
 
         if (!totalPriceInUSD || parseFloat(totalPriceInUSD) <= 0) {
-            return res.status(400).json({ message: "Invalid booking total price" });
+            return res
+                .status(400)
+                .json({ message: "Invalid booking total price" });
         }
 
         const create_payment_json = {
@@ -263,7 +320,9 @@ const handlePaypalPayment = async (req, res) => {
                 console.error(error);
                 res.status(500).json({ error: "Payment creation failed" });
             } else {
-                const approvalUrl = payment.links.find(link => link.rel === "approval_url").href;
+                const approvalUrl = payment.links.find(
+                    (link) => link.rel === "approval_url"
+                ).href;
 
                 // Save initial payment record
                 Payment.create({
@@ -283,7 +342,9 @@ const handlePaypalPayment = async (req, res) => {
         });
     } catch (err) {
         console.error("Error in handlePayment", err);
-        res.status(500).json({ error: "Server error during payment initiation" });
+        res.status(500).json({
+            error: "Server error during payment initiation",
+        });
     }
 };
 
@@ -292,7 +353,10 @@ const paymentSuccess = async (req, res) => {
     const { PayerID, paymentId, bookingId, userId } = req.query;
 
     if (!PayerID || !paymentId || !bookingId || !userId) {
-        return res.status(400).json({ message: "Missing required parameters: PayerID, paymentId, bookingId, or customerId" });
+        return res.status(400).json({
+            message:
+                "Missing required parameters: PayerID, paymentId, bookingId, or customerId",
+        });
     }
 
     try {
@@ -300,55 +364,85 @@ const paymentSuccess = async (req, res) => {
         const user = await User.findById(userId);
 
         if (!booking || !user) {
-            return res.status(404).json({ message: "Booking or User not found" });
+            return res
+                .status(404)
+                .json({ message: "Booking or User not found" });
         }
 
         const NPR_TO_USD_RATE = 0.0075;
-        const totalPriceInUSD = (booking.totalPrice * NPR_TO_USD_RATE).toFixed(2);
+        const totalPriceInUSD = (booking.totalPrice * NPR_TO_USD_RATE).toFixed(
+            2
+        );
 
         const execute_payment_json = {
             payer_id: PayerID,
-            transactions: [{ amount: { currency: "USD", total: totalPriceInUSD } }],
+            transactions: [
+                { amount: { currency: "USD", total: totalPriceInUSD } },
+            ],
         };
 
         // Execute PayPal payment
-        paypal.payment.execute(paymentId, execute_payment_json, async (error, payment) => {
-            if (error) {
-                return res.status(500).json({
-                    error: "Payment execution failed",
-                    details: error.response?.data || error.message,
+        paypal.payment.execute(
+            paymentId,
+            execute_payment_json,
+            async (error, payment) => {
+                if (error) {
+                    return res.status(500).json({
+                        error: "Payment execution failed",
+                        details: error.response?.data || error.message,
+                    });
+                }
+
+                const updatedBooking = await Booking.findByIdAndUpdate(
+                    bookingId,
+                    {
+                        paymentStatus: "paid",
+                        paidAt: new Date(),
+                        paymentId,
+                        transactionId: payment.id,
+                    },
+                    { new: true }
+                );
+
+                const savedPayment = await Payment.findOneAndUpdate(
+                    { booking: bookingId, method: "paypal" },
+                    {
+                        status: "successful",
+                        gatewayReference: paymentId,
+                        transactionId: payment.id,
+                        paidAt: new Date(),
+                    },
+                    { new: true }
+                );
+
+                // Get user's email
+                const user = await User.findById(userId);
+                const userEmail = user.email;
+
+                const booking = await Booking.findById(bookingId).populate(
+                    "venue",
+                    "venueName"
+                );
+
+                // Prepare booking details for email
+                const bookingDetailsForEmail = {
+                    venueName: booking.venue.venueName,
+                    date: booking.date,
+                    startTime: booking.startTime,
+                    endTime: booking.endTime,
+                    totalPrice: booking.totalPrice,
+                };
+
+                await sendBookingConfirmationEmail(userEmail, bookingDetailsForEmail);
+
+                res.json({
+                    message: "Payment Successful",
+                    booking: updatedBooking,
+                    paymentDetails: payment,
+                    savedPayment,
                 });
             }
-
-            const updatedBooking = await Booking.findByIdAndUpdate(
-                bookingId,
-                {
-                    paymentStatus: "paid",
-                    paidAt: new Date(),
-                    paymentId,
-                    transactionId: payment.id,
-                },
-                { new: true }
-            );
-
-            const savedPayment = await Payment.findOneAndUpdate(
-                { booking: bookingId, method: "paypal" },
-                {
-                    status: "successful",
-                    gatewayReference: paymentId,
-                    transactionId: payment.id,
-                    paidAt: new Date(),
-                },
-                { new: true }
-            );
-
-            res.json({
-                message: "Payment Successful",
-                booking: updatedBooking,
-                paymentDetails: payment,
-                savedPayment,
-            });
-        });
+        );
     } catch (error) {
         res.status(500).json({
             error: "Server error while processing payment success",

@@ -1,6 +1,8 @@
 //Backend/controller/booking.controller.js
 
 // Import models
+// const { sendBookingConfirmationEmail } = require("../utils/nodemailer");
+
 const Venue = require("../models/venue.model"); // Register the Venue model
 const Booking = require("../models/booking.model");
 const Payment = require("../models/booking.model");
@@ -178,7 +180,7 @@ const getBookedSlots = asyncHandler(async (req, res) => {
             { startTime: 1, endTime: 1, _id: 0 } // Only return start and end times
         );
 
-          // Format response to include only start and end times
+        // Format response to include only start and end times
         const formattedBookedSlots = bookedSlots.map((slot) => ({
             startTime: slot.startTime,
             endTime: slot.endTime,
@@ -195,40 +197,39 @@ const getBookedSlots = asyncHandler(async (req, res) => {
 });
 
 const cancelBooking = asyncHandler(async (req, res) => {
-  const { bookingId } = req.body;
+    const { bookingId } = req.body;
 
-  // Validate booking ID
-  if (!bookingId) {
-    return res.status(400).json({ message: "Booking ID is required" });
-  }
+    // Validate booking ID
+    if (!bookingId) {
+        return res.status(400).json({ message: "Booking ID is required" });
+    }
 
-  // Find the booking
-  const booking = await Booking.findById(bookingId);
-  if (!booking) {
-    return res.status(404).json({ message: "Booking not found" });
-  }
+    // Find the booking
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+        return res.status(404).json({ message: "Booking not found" });
+    }
 
-  // Check if already canceled
-  if (booking.paymentStatus === "cancelled") {
-    return res.status(400).json({ message: "Booking already canceled" });
-  }
+    // Check if already canceled
+    if (booking.paymentStatus === "cancelled") {
+        return res.status(400).json({ message: "Booking already canceled" });
+    }
 
-  // Update booking status to 'cancelled'
-  booking.paymentStatus = "cancelled";
-  await booking.save();
+    // Update booking status to 'cancelled'
+    booking.paymentStatus = "cancelled";
+    await booking.save();
 
-  // Update associated payment status if exists
-  await Payment.findOneAndUpdate(
-    { booking: bookingId },
-    { status: "cancelled" }
-  );
+    // Update associated payment status if exists
+    await Payment.findOneAndUpdate(
+        { booking: bookingId },
+        { status: "cancelled" }
+    );
 
-  res.status(200).json({
-    message: "Booking canceled successfully",
-    booking,
-  });
+    res.status(200).json({
+        message: "Booking canceled successfully",
+        booking,
+    });
 });
-
 
 // Export all booking controller functions
 
